@@ -1,0 +1,53 @@
+# Event-type defaults (SPEC §4). direction: +1 = more pressure on EGP to weaken, -1 = relief, 0 = tag only.
+# keywords: lower-case regexes used to propose auto-candidates from RSS headlines (never values).
+# A candidate is auto-promoted to 'reported' only when >= 2 independent outlets report it within 48 h.
+
+event_types:
+  regional_war_escalation: {severity: 5, direction: 1, half_life_days: 30, subindex: geopolitical, description: "Iran/Israel/Gulf escalation",
+    keywords: ["\\b(strike|strikes|missile|airstrike|attack)s?\\b.*\\b(iran|israel|gulf|hezbollah|houthi)", "\\bwar\\b.*\\b(escalat|widen)", "escalat\\w* .*\\b(iran|israel)"]}
+  chokepoint_disruption: {severity: 4, direction: 1, half_life_days: 21, subindex: geopolitical, description: "Attacks or closures at Hormuz / Bab el-Mandeb / Red Sea",
+    keywords: ["(hormuz|bab el-mandeb|red sea).*\\b(attack|closure|closed|block|seiz|disrupt)", "houthi.*\\b(ship|vessel|tanker)"]}
+  ceasefire_or_deescalation: {severity: 3, direction: -1, half_life_days: 21, subindex: geopolitical, description: "Ceasefire / de-escalation",
+    keywords: ["\\bceasefire\\b", "\\btruce\\b", "de-escalat"]}
+  domestic_unrest: {severity: 3, direction: 1, half_life_days: 14, subindex: geopolitical, description: "Domestic unrest in Egypt",
+    keywords: ["\\b(protest|riot|unrest)s?\\b.*egypt"]}
+  cabinet_change: {severity: 2, direction: 0, half_life_days: 30, subindex: geopolitical, description: "Cabinet or CBE governor change",
+    keywords: ["cabinet reshuffle", "new (finance|prime) minister", "cbe governor (appointed|replaced|resign)"]}
+  imf_staff_level_agreement: {severity: 3, direction: -1, half_life_days: 45, subindex: fiscal, description: "IMF staff-level agreement",
+    keywords: ["imf.*staff[- ]level agreement"]}
+  imf_board_approval_disbursement: {severity: 3, direction: -1, half_life_days: 30, subindex: fiscal, description: "IMF board approval / disbursement",
+    keywords: ["imf.*(executive board|board) (approv|complet)", "imf.*disburs"]}
+  imf_review_delay: {severity: 4, direction: 1, half_life_days: 45, subindex: fiscal, description: "IMF review delayed",
+    keywords: ["imf.*review.*(delay|postpon)"]}
+  rating_upgrade: {severity: 3, direction: -1, half_life_days: 60, subindex: fiscal, description: "Rating upgrade or outlook to positive",
+    keywords: ["(moody|fitch|s&p)\\S*.*(upgrade|raise|raises|lifts).*egypt", "egypt.*(upgrade|outlook to positive)"]}
+  rating_downgrade: {severity: 4, direction: 1, half_life_days: 60, subindex: fiscal, description: "Rating downgrade or outlook to negative",
+    keywords: ["(moody|fitch|s&p)\\S*.*(downgrade|cuts|lowers).*egypt", "egypt.*(downgrade|outlook to negative)"]}
+  rating_affirmation: {severity: 1, direction: 0, half_life_days: 30, subindex: fiscal, description: "Rating affirmed (no change) — tag only",
+    keywords: ["(moody|fitch|s&p)\\S*.*affirm.*egypt"]}
+  gulf_deposit_or_megadeal: {severity: 4, direction: -1, half_life_days: 60, subindex: external, description: "Gulf deposit or mega-deal",
+    keywords: ["(saudi|uae|emirati|qatar|kuwait)\\S*.*(deposit|investment deal|mega[- ]deal|billion investment)", "ras el[- ]hekma"]}
+  privatization_ipo_proceeds: {severity: 2, direction: -1, half_life_days: 30, subindex: external, description: "Privatization / IPO proceeds",
+    keywords: ["(stake sale|privati[sz]ation|ipo).*\\$?\\d"]}
+  eurobond_issuance_success: {severity: 2, direction: -1, half_life_days: 30, subindex: fiscal, description: "Successful Eurobond/sukuk issuance",
+    keywords: ["egypt.*(eurobond|sukuk|bond).*(issu|sold|rais|oversubscri)"]}
+  eurobond_maturity_due: {severity: 2, direction: 1, half_life_days: 7, subindex: fiscal, description: "Eurobond maturity within 30 days", keywords: []}
+  fuel_price_hike: {severity: 3, direction: 1, half_life_days: 90, subindex: commodities, description: "Fuel price hike (inflation channel)",
+    keywords: ["(raise|raises|hike|increase)s?.*fuel prices", "fuel prices.*(raise|hike|increase)"]}
+  fuel_price_freeze: {severity: 1, direction: 0, half_life_days: 90, subindex: commodities, description: "Fuel price freeze (deferred pass-through tag)",
+    keywords: ["fuel prices.*(unchanged|freeze|fixed)", "(keeps|keep|freez)\\w*.*fuel prices"]}
+  load_shedding_start: {severity: 3, direction: 1, half_life_days: 30, subindex: commodities, description: "Load-shedding begins",
+    keywords: ["load[- ]shedding", "power cuts.*(return|resume)"]}
+  lng_supply_disruption: {severity: 4, direction: 1, half_life_days: 30, subindex: commodities, description: "LNG/gas supply disruption",
+    keywords: ["(israel\\w*|israeli) gas.*(halt|cut|stop|suspend)", "gas supplies.*(halt|cut|suspend)"]}
+  eu_mfa_tranche: {severity: 2, direction: -1, half_life_days: 30, subindex: external, description: "EU macro-financial assistance tranche",
+    keywords: ["(eu|european union).*(macro-financial|mfa).*(tranche|disburs)"]}
+  sanctions_on_partner_or_shipping: {severity: 3, direction: 1, half_life_days: 45, subindex: geopolitical, description: "Sanctions on partners / shipping",
+    keywords: ["sanction\\w*.*(shipping|tanker|vessel)"]}
+  eda_repricing_decision: {severity: 2, direction: 0, half_life_days: 180, subindex: healthcare, description: "EDA drug-pricing decision (healthcare tag)",
+    keywords: ["(eda|drug authority).*(pric|reprice)", "drug prices"]}
+
+# Scale used when events feed a sub-index: points per unit of decayed score, capped at ±40 (SPEC §7)
+index_points_per_unit: 8
+index_cap: 40
+drop_below: 0.1

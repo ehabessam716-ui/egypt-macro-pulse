@@ -1,0 +1,11 @@
+# Egypt Macro Pulse — crontab (times are Africa/Cairo; CRON_TZ needs cronie/systemd-cron)
+# Generated on Windows: replace /path/to/Economic Horizon with the project path on macOS/Linux.
+CRON_TZ=Africa/Cairo
+30 9 * * 0,1,2,3,4 cd "/path/to/Economic Horizon" && "/path/to/Economic Horizon/.venv/bin/python" -m pulse.cli run --job daily >> "/path/to/Economic Horizon/logs/cron.log" 2>&1  # daily_0930
+30 18 * * 0,1,2,3,4 cd "/path/to/Economic Horizon" && "/path/to/Economic Horizon/.venv/bin/python" -m pulse.cli run --job daily >> "/path/to/Economic Horizon/logs/cron.log" 2>&1  # daily_1830
+30 23 * * 1,2,3,4,5 cd "/path/to/Economic Horizon" && "/path/to/Economic Horizon/.venv/bin/python" -m pulse.cli run --job global >> "/path/to/Economic Horizon/logs/cron.log" 2>&1  # global_2330
+0 20 * * 4 cd "/path/to/Economic Horizon" && "/path/to/Economic Horizon/.venv/bin/python" -m pulse.cli run --job weekly >> "/path/to/Economic Horizon/logs/cron.log" 2>&1  # weekly_thu2000
+0 12 * * 1 cd "/path/to/Economic Horizon" && "/path/to/Economic Horizon/.venv/bin/python" -m pulse.cli run --job gpr >> "/path/to/Economic Horizon/logs/cron.log" 2>&1  # gpr_mon1200_and_2nd
+0 12 2 * * cd "/path/to/Economic Horizon" && "/path/to/Economic Horizon/.venv/bin/python" -m pulse.cli run --job gpr >> "/path/to/Economic Horizon/logs/cron.log" 2>&1  # gpr_mon1200_and_2nd
+0 7 * * * cd "/path/to/Economic Horizon" && "/path/to/Economic Horizon/.venv/bin/python" -m pulse.cli run --job calendar >> "/path/to/Economic Horizon/logs/cron.log" 2>&1  # calendar_0700
+@reboot cd "/path/to/Economic Horizon" && "/path/to/Economic Horizon/.venv/bin/python" -m pulse.cli serve >> "/path/to/Economic Horizon/logs/serve.log" 2>&1  # server_at_logon

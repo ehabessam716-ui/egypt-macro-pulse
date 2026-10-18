@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pulse · نبض — Egypt Macro</title>
+<meta name="description" content="Egypt Macro Pulse — what moves the Egyptian pound, live. Learning tool, not financial advice.">
+<meta name="theme-color" content="#0E3B43">
+<link rel="icon" href="logo.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<script>
+  // apply saved theme/lang before paint (no flash)
+  try {
+    const q = new URLSearchParams(location.search);
+    if (q.get('lang')) localStorage.setItem('pulse.lang', q.get('lang') === 'ar' ? 'ar' : 'en');
+    if (q.get('theme')) localStorage.setItem('pulse.theme', q.get('theme'));
+    const t = localStorage.getItem('pulse.theme'); if (t && t !== 'auto') document.documentElement.dataset.theme = t;
+    const l = localStorage.getItem('pulse.lang'); if (l === 'ar') { document.documentElement.lang = 'ar'; document.documentElement.dir = 'rtl'; }
+  } catch (e) {}
+</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="topbar">
+  <div class="brand" role="banner">
+    <img src="logo.svg" alt="" width="36" height="36">
+    <div class="wordmark">
+      <span class="wm-name">Pulse <span class="wm-ar">نبض</span></span>
+      <span class="wm-sub" data-i18n="tagline">Egypt Macro · what moves the pound</span>
+    </div>
+  </div>
+  <div class="top-actions">
+    <button class="live" id="live" type="button" aria-live="polite"><span class="dot"></span><span id="liveText">…</span></button>
+    <button class="btn ghost" id="searchBtn" type="button" aria-label="Search"><span aria-hidden="true">⌕</span><span class="hide-sm" data-i18n="search">Search</span><kbd class="hide-sm">Ctrl K</kbd></button>
+    <button class="btn ghost" id="runBtn" type="button" hidden><span aria-hidden="true">↻</span><span class="hide-sm" data-i18n="update_now">Update now</span></button>
+    <div class="seg" role="group" aria-label="Language">
+      <button type="button" data-lang="en">EN</button><button type="button" data-lang="ar">ع</button>
+    </div>
+    <button class="btn ghost icon" id="themeBtn" type="button" aria-label="Theme"></button>
+  </div>
+</header>
+<nav class="tabs" id="tabs" aria-label="Sections"></nav>
+<main id="main" tabindex="-1"><div class="boot"><img src="logo.svg" alt="" width="56" height="56"><p>Loading…</p></div></main>
+<nav class="bottombar" id="bottombar" aria-label="Quick navigation"></nav>
+
+<aside class="drawer" id="drawer" aria-hidden="true" aria-modal="true" role="dialog" aria-labelledby="drawerTitle">
+  <div class="drawer-scrim" data-close></div>
+  <div class="drawer-panel">
+    <button class="btn ghost icon close" data-close aria-label="Close">✕</button>
+    <div id="drawerBody"></div>
+  </div>
+</aside>
+
+<div class="palette" id="palette" aria-hidden="true" role="dialog" aria-label="Search">
+  <div class="palette-scrim" data-close></div>
+  <div class="palette-box">
+    <input id="paletteInput" type="search" autocomplete="off" spellcheck="false" placeholder="Search 199 indicators…">
+    <ul id="paletteList" role="listbox"></ul>
+    <div class="palette-hint"><kbd>↑</kbd><kbd>↓</kbd> <span data-i18n="to_move">to move</span> · <kbd>Enter</kbd> <span data-i18n="to_open">to open</span> · <kbd>Esc</kbd></div>
+  </div>
+</div>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<script src="plotly.min.js" defer></script>
+<script src="app.js" defer></script>
+</body>
+</html>

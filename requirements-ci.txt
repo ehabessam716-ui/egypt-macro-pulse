@@ -1,0 +1,18 @@
+# Minimal dependencies for the GitHub Actions run (no server/browser packages)
+requests
+pandas
+pyarrow
+PyYAML
+feedparser
+beautifulsoup4
+lxml
+pdfplumber
+openpyxl
+xlrd
+yfinance
+plotly
+jinja2
+markupsafe
+python-dateutil
+tzdata
+pytest

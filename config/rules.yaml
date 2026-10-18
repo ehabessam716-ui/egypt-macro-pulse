@@ -1,0 +1,430 @@
+# Rule engine (SPEC §6). Logic lives in pulse/rules.py (one function per id); everything tunable is here.
+# Thresholds are TOOL DEFAULTS, not facts — outputs label them "tool default".
+# direction: +1 = pressure on EGP to weaken, -1 = relief, 0 = note/tag (does not move the PPI).
+# affects: sub-indices (external, monetary, fiscal, commodities, geopolitical, global) and/or the
+#          extra indices (inflation, growth). Arabic sentences must contain no Latin letters.
+
+rules:
+  FX01:
+    name: hidden_peg
+    domain: fx
+    affects: [monetary]
+    concept_tag: hidden peg
+    params: {nir_falling_months: 3, fx_flat_pct: 0.3, gap_pct: 5}
+    lag_note: "a defended rate can hold for months, then gap suddenly"
+    en: "Hidden-peg check: reserves fell {nir_months} months in a row while the official rate barely moved ({fx_chg_20d:+.2f}% in 20 days) and the gold/parallel gap is {gap:+.1f}% — the classic sign that a rate is being defended."
+    ar: "علامة تثبيت مستخبي: الاحتياطي نزل {nir_months} شهور ورا بعض والسعر الرسمي تقريبا ثابت ({fx_chg_20d:+.2f}% في 20 يوم) والفرق مع الدهب أو السوق الموازية {gap:+.1f}%، وده معناه إن السعر بيتسند."
+  FX02:
+    name: parallel_gap
+    domain: fx
+    affects: [monetary]
+    concept_tag: parallel market premium
+    params: {noise: 0.8, watch: 3, alert: 5, severe: 10}
+    lag_note: "gaps tend to lead official moves by weeks"
+    en: "The {gap_name} gap vs the CBE rate is {gap:+.2f}% ({level}); within ±{noise}% is normal noise (≈ EGP 50 per gram of 21K)."
+    ar: "الفرق بين {gap_name_ar} والسعر الرسمي {gap:+.2f}% ({level_ar})، وأي فرق جوه حدود {noise}% يعتبر تذبذب عادي."
+  FX03:
+    name: foreign_outflow
+    domain: fx
+    affects: [monetary, external]
+    concept_tag: hot money
+    params: {sessions: 5, tbill_drop_pct: 5}
+    lag_note: "hot money leaves fast; FX reacts within days"
+    en: "Foreign investors are pulling money out: {detail}. Hot money leaving means fewer dollars coming in."
+    ar: "الأجانب بيسحبوا فلوسهم: {detail_ar}. خروج الأموال الساخنة معناه دولارات أقل داخلة البلد."
+  FX04:
+    name: auction_stress
+    domain: fx
+    affects: [monetary, fiscal]
+    concept_tag: crowding out / financing stress
+    params: {btc_min: 1.2, accepted_min: 0.7, yield_jump_bp: 100, weeks: 4}
+    lag_note: "same week"
+    en: "T-bill auction stress: {detail}. The government is struggling to fund itself at current yields."
+    ar: "ضغط في مزادات أذون الخزانة: {detail_ar}. الحكومة بتلاقي صعوبة إنها تمول نفسها بالعوايد الحالية."
+  FX05:
+    name: sharp_move
+    domain: fx
+    affects: [monetary]
+    concept_tag: devaluation / float adjustment
+    params: {pct_5d: 2}
+    lag_note: "immediate"
+    en: "Sharp move: USD/EGP changed {fx_chg_5d:+.2f}% in 5 CBE business days (alert above {pct_5d}%)."
+    ar: "حركة حادة: سعر الدولار اتغير {fx_chg_5d:+.2f}% في 5 أيام عمل."
+  MO01:
+    name: real_rate_cushion
+    domain: monetary
+    affects: [monetary]
+    concept_tag: real interest rate / carry
+    params: {low: 2, high: 5}
+    lag_note: "slow; matters for portfolio inflows over months"
+    en: "Real policy rate is {real:+.1f} pp (deposit rate {odr:.2f}% minus urban inflation {cpi:.1f}%). {verdict}"
+    ar: "الفايدة الحقيقية {real:+.1f} نقطة مئوية (فايدة الإيداع {odr:.2f}% ناقص التضخم {cpi:.1f}%). {verdict_ar}"
+  MO02:
+    name: expectations_divergence
+    domain: monetary
+    affects: [inflation]
+    concept_tag: inflation expectations
+    params: {gap_pp: 3}
+    lag_note: "months"
+    en: "Real rate vs core inflation ({real_core:+.1f} pp) and vs the CBE's own forecast ({real_exp:+.1f} pp) differ by {div:.1f} pp — expectations risk."
+    ar: "الفرق بين الفايدة الحقيقية مقابل التضخم الأساسي ({real_core:+.1f}) ومقابل توقع البنك المركزي ({real_exp:+.1f}) وصل {div:.1f} نقطة، وده خطر على التوقعات."
+  MO03:
+    name: mpc_surprise
+    domain: monetary
+    affects: [monetary]
+    concept_tag: market surprise
+    params: {}
+    lag_note: "same day"
+    en: "MPC decision ({decision}) differed from consensus ({consensus}) — a {kind} surprise."
+    ar: "قرار لجنة السياسة النقدية جه عكس توقعات السوق، ودي مفاجأة {kind_ar}."
+  MO04:
+    name: data_dependence
+    domain: monetary
+    affects: [inflation]
+    concept_tag: data dependence
+    params: {mom: 1.5, months: 2}
+    lag_note: "next MPC"
+    en: "Monthly inflation above {mom}% for {months} months ({detail}) — expect a hawkish bias at the next MPC."
+    ar: "التضخم الشهري فوق {mom}% لمدة {months} شهور، فمتوقع البنك المركزي يميل للتشديد في الاجتماع الجاي."
+  MO05:
+    name: passthrough
+    domain: monetary
+    affects: [inflation]
+    concept_tag: pass-through
+    params: {fx_3m_pct: 5}
+    lag_note: "1–6 months"
+    en: "USD/EGP rose {fx_chg_3m:+.1f}% in 3 months — expect core inflation to accelerate over the next 1–6 months (pass-through)."
+    ar: "الدولار طلع {fx_chg_3m:+.1f}% في 3 شهور، فمتوقع التضخم الأساسي يزيد خلال شهر لستة شهور لأن غلو الدولار بيعدي على الأسعار."
+  MO06:
+    name: vicious_cycle
+    domain: monetary
+    affects: [monetary, inflation]
+    concept_tag: inflation vicious cycle
+    params: {fx_3m_pct: 1}
+    lag_note: "self-reinforcing over months"
+    en: "Vicious-cycle warning: the pound is weakening ({fx_chg_3m:+.1f}% in 3m), inflation is rising ({cpi_prev:.1f}% → {cpi:.1f}%) and the real rate is falling ({real_prev:+.1f} → {real:+.1f} pp)."
+    ar: "تحذير من الدايرة المقفولة: الجنيه بيضعف والتضخم بيزيد والفايدة الحقيقية بتقل، وكل واحدة بتغذي التانية."
+  MO07:
+    name: second_round
+    domain: monetary
+    affects: [inflation]
+    concept_tag: second-round effects
+    params: {days: 90}
+    lag_note: "1–3 months after an administered price hike"
+    en: "A fuel/electricity price hike in the last {days} days and core m/m rising ({core_prev:.1f}% → {core:.1f}%) — watch second-round effects."
+    ar: "فيه زيادة في أسعار الوقود أو الكهربا في آخر {days} يوم والتضخم الأساسي الشهري بيزيد، فخلي بالك من الآثار التانية على باقي الأسعار."
+  MO08:
+    name: crowding_out
+    domain: monetary
+    affects: [growth]
+    concept_tag: crowding out
+    params: {gap_pp: 10}
+    lag_note: "slow"
+    en: "Credit to government grows {gap:.1f} pp faster than private credit — banks fund the state, not businesses (growth drag)."
+    ar: "قروض البنوك للحكومة بتزيد أسرع من قروض القطاع الخاص بفرق {gap:.1f} نقطة، يعني الشركات بتاخد تمويل أقل."
+  EX01:
+    name: remittances_momentum
+    domain: external
+    affects: [external]
+    concept_tag: remittances
+    params: {low: 0, high: 20}
+    lag_note: "monthly"
+    en: "Remittances grew {yoy:+.1f}% y/y on average over the last {n} reported month(s). {verdict}"
+    ar: "تحويلات المصريين في الخارج زادت {yoy:+.1f}% عن السنة اللي فاتت. {verdict_ar}"
+  EX02:
+    name: suez_weak
+    domain: external
+    affects: [external]
+    concept_tag: Suez Canal / chokepoints
+    params: {weak: 0.6, recovered: 0.85}
+    lag_note: "revenue follows traffic within a month"
+    en: "Suez Canal traffic (7-day avg) is at {ratio:.0%} of the 2023 average. {verdict}"
+    ar: "حركة قناة السويس دلوقتي {ratio_pct:.0f}% من متوسط سنة 2023. {verdict_ar}"
+  EX03:
+    name: tourism_shock
+    domain: external
+    affects: [external]
+    concept_tag: triple hit
+    params: {}
+    lag_note: "1–2 quarters"
+    en: "A regional war event is active and tourism revenue is falling — tourism is the first sector to feel it."
+    ar: "فيه تصعيد حرب في المنطقة وإيرادات السياحة بتقل، والسياحة أول قطاع بيتأثر."
+  EX04:
+    name: triple_hit
+    domain: external
+    affects: [external, geopolitical]
+    concept_tag: external shock triple hit
+    params: {brent_over_budget: 15}
+    lag_note: "weeks to quarters"
+    en: "Triple hit: regional war active + Brent ${brent_gap:.0f} above budget + capital outflows ({outflow})."
+    ar: "ضربة تلاتية: حرب في المنطقة وسعر البترول أعلى من الموازنة بكتير وأموال بتخرج."
+  EX05:
+    name: ca_gap
+    domain: external
+    affects: [external]
+    concept_tag: current account deficit
+    params: {widen_pct: 30}
+    lag_note: "quarterly"
+    en: "The current-account deficit widened {widen:+.0f}% y/y (${ca:.1f}bn vs ${ca_prev:.1f}bn) — more dollars leave than come in through trade and income."
+    ar: "عجز الحساب الجاري زاد {widen:+.0f}% عن السنة اللي فاتت، يعني الدولارات اللي بتخرج أكتر من اللي بتدخل من التجارة والدخل."
+  EX06:
+    name: reserves_cover
+    domain: external
+    affects: [external]
+    concept_tag: reserve adequacy
+    params: {min_months: 5}
+    lag_note: "buffer, slow"
+    en: "Reserves cover {months:.1f} months of imports{record}. {verdict} Weigh this against the current-account gap (EX05)."
+    ar: "الاحتياطي يغطي {months:.1f} شهور واردات. {verdict_ar} لكن لازم نقارنه بعجز الحساب الجاري."
+  EX07:
+    name: gulf_inflow
+    domain: external
+    affects: [external]
+    concept_tag: Gulf support
+    params: {}
+    lag_note: "immediate dollar supply"
+    en: "A Gulf deposit or mega-deal is active ({title}) — fresh dollars ease pressure."
+    ar: "فيه ودائع أو صفقة خليجية كبيرة شغالة، ودولارات جديدة بتخفف الضغط."
+  FD01:
+    name: debt_wall
+    domain: fiscal
+    affects: [fiscal]
+    concept_tag: debt service wall
+    params: {ratio_pct: 10, eurobond_days: 30}
+    lag_note: "dated"
+    en: "Debt wall: {detail}."
+    ar: "حيطة ديون: {detail_ar}."
+  FD02:
+    name: interest_burden
+    domain: fiscal
+    affects: [fiscal]
+    concept_tag: interest burden
+    params: {pct: 50}
+    lag_note: "structural"
+    en: "Interest eats {ratio:.0f}% of government revenue — a structural weakness."
+    ar: "الفوايد بتاكل {ratio:.0f}% من إيرادات الحكومة، ودي نقطة ضعف هيكلية."
+  FD03:
+    name: imf_anchor
+    domain: fiscal
+    affects: [fiscal]
+    concept_tag: IMF as guarantor
+    params: {end_watch_days: 60, review_fresh_days: 180, delay_days: 60}
+    lag_note: "months"
+    en: "{detail}"
+    ar: "{detail_ar}"
+  FD04:
+    name: ratings
+    domain: fiscal
+    affects: [fiscal]
+    concept_tag: credit ratings (lag markets)
+    params: {window_days: 60}
+    lag_note: "ratings usually follow markets"
+    en: "{agency} action on {date}: {title}. Ratings lag markets; CDS/Eurobond moves are MANUAL so the 'already priced' check can't run."
+    ar: "قرار من وكالة تصنيف بتاريخ {date}: {title_ar}. التصنيفات غالبا بتمشي ورا السوق."
+  FD05:
+    name: eurobond_spread
+    domain: fiscal
+    affects: [fiscal]
+    concept_tag: sovereign spread
+    params: {bp: 700}
+    lag_note: "daily"
+    en: "Eurobond yield minus US 10Y = {spread:.0f} bp (above {bp} bp signals stress)."
+    ar: "الفرق بين عائد السندات المصرية والأمريكية {spread:.0f} نقطة أساس، وده مستوى ضغط."
+  RE01:
+    name: pmi_contraction
+    domain: real
+    affects: [growth]
+    concept_tag: inflation vs growth trade-off
+    params: {level: 50, strong: 47, months: 3}
+    lag_note: "monthly"
+    en: "PMI below 50 for {months} months ({detail}) — the private sector is shrinking; this sharpens the cut-vs-hold dilemma."
+    ar: "مؤشر مديري المشتريات تحت 50 بقاله {months} شهور، يعني القطاع الخاص بينكمش، وده بيصعب قرار الفايدة."
+  RE02:
+    name: energy_stress
+    domain: real
+    affects: [commodities]
+    concept_tag: energy security
+    params: {}
+    lag_note: "weeks"
+    en: "Energy stress: {detail}."
+    ar: "ضغط في الطاقة: {detail_ar}."
+  EC01:
+    name: oil_budget_gap
+    domain: energy
+    affects: [commodities, fiscal]
+    concept_tag: oil shock channels
+    params: {gap: 10, strong: 25}
+    lag_note: "fiscal monthly; inflation at the next fuel committee"
+    en: "Brent at ${brent:.1f} is ${gap:.1f} above the ${budget:.0f} budget assumption → fuel subsidy bill up (fiscal), import bill up (≈{ca:.1f}% of GDP on the current account by the IMF rule of thumb), and a pending fuel-price decision (inflation)."
+    ar: "البترول أعلى من سعر الموازنة بحوالي {gap:.0f} دولار للبرميل، وده بيزود دعم الوقود وفاتورة الاستيراد وبيضغط على أسعار البنزين بعدين."
+  EC02:
+    name: fuel_committee_lag
+    domain: energy
+    affects: [inflation, commodities]
+    concept_tag: deferred pass-through
+    params: {q_chg_pct: 10}
+    lag_note: "next quarter's committee"
+    en: "Quarter-average Brent in EGP is {chg:+.1f}% vs last quarter while pump prices are frozen — the pass-through is deferred, not cancelled (risk for next quarter)."
+    ar: "متوسط سعر البترول بالجنيه زاد {chg:+.1f}% عن الربع اللي فات والأسعار متثبتة، يعني الزيادة متأجلة مش ملغية."
+  EC03:
+    name: gas_price
+    domain: energy
+    affects: [commodities]
+    concept_tag: LNG import bill
+    params: {pct_1m: 30}
+    lag_note: "next cargo purchases"
+    en: "European gas price up {chg:+.0f}% in a month — Egypt's LNG import bill rises."
+    ar: "سعر الغاز الأوروبي زاد {chg:+.0f}% في شهر، وفاتورة استيراد الغاز المسال هتزيد."
+  EC04:
+    name: wheat
+    domain: energy
+    affects: [commodities, inflation]
+    concept_tag: food import bill
+    params: {pct_3m: 20}
+    lag_note: "months"
+    en: "Wheat up {chg:+.0f}% in 3 months — bigger import bill and bread-subsidy cost."
+    ar: "القمح زاد {chg:+.0f}% في 3 شهور، وده بيزود فاتورة الاستيراد وتكلفة دعم العيش."
+  EC05:
+    name: hormuz
+    domain: energy
+    affects: [commodities, geopolitical]
+    concept_tag: chokepoints
+    params: {ratio: 0.5}
+    lag_note: "immediate for oil"
+    en: "Hormuz risk: {detail}. Disruption there feeds straight into oil prices (EC01)."
+    ar: "خطر في مضيق هرمز: {detail_ar}، وده بيأثر على البترول على طول."
+  GO01:
+    name: gold_and_dollar_up
+    domain: gold
+    affects: [global]
+    concept_tag: safe havens
+    params: {}
+    lag_note: "days"
+    en: "Gold ({gold:+.1f}%) and the dollar index ({dxy:+.1f}%) both rose over 20 days — a risk-off, safe-haven move."
+    ar: "الدهب ومؤشر الدولار الاتنين طلعوا في آخر 20 يوم، ودي علامة إن المستثمرين خايفين وبيدوروا على ملاذ آمن."
+  GO02:
+    name: local_gold_premium
+    domain: gold
+    affects: [monetary]
+    concept_tag: devaluation hedging
+    params: {pct: 3, days: 5}
+    lag_note: "days"
+    en: "Local 21K gold has traded at a {sign} of {prem:+.1f}% vs global for {days}+ observations — {verdict}"
+    ar: "الدهب المحلي بقاله {days} قراءات بفرق {prem:+.1f}% عن السعر العالمي. {verdict_ar}"
+  GO03:
+    name: gold_reserves_effect
+    domain: gold
+    affects: []
+    concept_tag: reserve valuation
+    params: {}
+    lag_note: "monthly"
+    en: "NIR change {nir_chg:+,.0f} mn: gold holdings {gold_chg:+,.0f} mn, FX holdings {fx_chg:+,.0f} mn — gold revaluation is not a new inflow."
+    ar: "تغير الاحتياطي جزء منه من ارتفاع قيمة الدهب، وده مش فلوس جديدة داخلة."
+  GL01:
+    name: fed_hawkish
+    domain: global
+    affects: [global]
+    concept_tag: Fed and EM flows
+    params: {}
+    lag_note: "days"
+    en: "Hawkish US surprise ({detail}) — a stronger dollar raises EM outflow risk."
+    ar: "مفاجأة متشددة من أمريكا، والدولار القوي بيزود خطر خروج الأموال من الأسواق الناشئة."
+  GL02:
+    name: risk_off
+    domain: global
+    affects: [global]
+    concept_tag: safe havens / risk-off
+    params: {vix: 25, spread_bp_1m: 50}
+    lag_note: "days"
+    en: "Global risk-off: {detail}."
+    ar: "الأسواق العالمية في حالة خوف: {detail_ar}."
+  GL03:
+    name: dxy_vs_egp
+    domain: global
+    affects: []
+    concept_tag: DXY vs local supply/demand
+    params: {pct: 1}
+    lag_note: "n/a"
+    en: "DXY moved {dxy:+.1f}% but USD/EGP moved {fx:+.1f}% in 20 days — USD/EGP follows Egypt's own dollar supply and demand, not the dollar's moves against major currencies."
+    ar: "مؤشر الدولار اتحرك {dxy:+.1f}% وسعر الدولار في مصر اتحرك {fx:+.1f}%، لأن سعر الجنيه بيتحدد بالعرض والطلب على الدولار جوه مصر."
+  GL04:
+    name: euro_area_weak
+    domain: global
+    affects: [external]
+    concept_tag: tourism/export demand
+    params: {pmi: 50}
+    lag_note: "quarters"
+    en: "Euro-area PMI {pmi:.1f} (<50) — headwind for tourism and exports."
+    ar: "اقتصاد أوروبا بينكمش، وده بيقلل السياحة والصادرات."
+  GL05:
+    name: gulf_weak
+    domain: global
+    affects: [external]
+    concept_tag: remittances & Gulf investment
+    params: {pmi: 50}
+    lag_note: "quarters"
+    en: "Gulf activity weak ({detail}) — risk to remittances and Gulf investment."
+    ar: "النشاط في الخليج ضعيف، وده خطر على التحويلات والاستثمارات الخليجية."
+  GP01:
+    name: gpr_spike
+    domain: geopolitical
+    affects: [geopolitical]
+    concept_tag: geopolitical risk
+    params: {pctile: 90, years: 3}
+    lag_note: "days"
+    en: "Global geopolitical risk (7-day avg {avg:.0f}) is above the {pctile}th percentile of the last {years} years ({p90:.0f})."
+    ar: "مؤشر المخاطر الجيوسياسية العالمي أعلى من {pctile}% من قراءات آخر {years} سنين."
+  GP02:
+    name: gpr_egypt
+    domain: geopolitical
+    affects: [geopolitical]
+    concept_tag: country risk
+    params: {std: 2, years: 5}
+    lag_note: "monthly"
+    en: "Egypt's own geopolitical-risk index ({val:.2f}, {date}) is {z:.1f} std above its 5-year mean."
+    ar: "مؤشر المخاطر الجيوسياسية لمصر أعلى من متوسط خمس سنين بفرق كبير."
+  GP03:
+    name: gdelt_tone
+    domain: geopolitical
+    affects: [geopolitical]
+    concept_tag: news sentiment
+    params: {std: 2}
+    lag_note: "days (weak, news-based)"
+    en: "News tone on Egypt's economy dropped sharply (7-day avg {tone:.2f}, z={z:.1f}) with a volume spike."
+    ar: "نبرة الأخبار عن اقتصاد مصر بقت سلبية جدا مع زيادة كبيرة في عدد الأخبار."
+  GP04:
+    name: events
+    domain: geopolitical
+    affects: [geopolitical]
+    concept_tag: event decay
+    params: {min_abs: 0.5}
+    lag_note: "decays by half-life"
+    en: "Active geopolitical events add a decayed score of {score:+.2f} ({n} event(s))."
+    ar: "الأحداث الجيوسياسية الشغالة بتضيف ضغط قيمته {score:+.2f}."
+  HC01:
+    name: eda_trigger
+    domain: healthcare
+    affects: []
+    concept_tag: EDA Decision 480 repricing
+    params: {pct: 10, days: 45}
+    lag_note: "6-month review windows"
+    en: "EDA repricing signal is {sig:.1f}% (≥{pct}% for {days}+ days) — repricing requests are likely eligible. (My reconstruction of Decision 480; verify vs Gazette.)"
+    ar: "مؤشر إعادة تسعير الدواء وصل {sig:.1f}%، يعني طلبات زيادة الأسعار غالبا هتكون مستحقة."
+  HC02:
+    name: fx_threshold
+    domain: healthcare
+    affects: []
+    concept_tag: industry-cited FX trigger
+    params: {level: 55, days: 45}
+    lag_note: "45 days"
+    en: "USD/EGP has stayed above {level} for {days}+ days — the industry-cited trigger for drug price increases."
+    ar: "الدولار فضل فوق {level} جنيه أكتر من {days} يوم، ودي العتبة اللي الصناعة بتقول إنها بتفتح باب زيادة أسعار الدوا."
+  HC03:
+    name: import_cost
+    domain: healthcare
+    affects: []
+    concept_tag: imported medical supplies
+    params: {pct_3m: 5}
+    lag_note: "1–3 months"
+    en: "USD/EGP up {fx_chg_3m:+.1f}% in 3 months — imported medical supplies cost more in EGP (check UAE-vs-Egypt price gaps)."
+    ar: "الدولار زاد {fx_chg_3m:+.1f}% في 3 شهور، فالمستلزمات الطبية المستوردة هتغلى بالجنيه."

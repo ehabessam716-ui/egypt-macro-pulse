@@ -1,0 +1,92 @@
+# Composite indices (SPEC §7). Weights are tool defaults — edit freely.
+# sign: +1 = a higher value means more pressure on EGP (or more inflation / more growth for those indices).
+# Method per input: z-score vs the trailing 3-year window (min 24 obs) → clip ±3 → 100·tanh(z/2) → × sign.
+# Fired rules that list a sub-index in `affects` add 100 × strength × direction as extra components.
+# Active events add decayed points (capped ±40 per sub-index). Inputs stale beyond 2× limit are excluded.
+
+method: {window_years: 3, min_obs: 24, clip: 3}
+
+ppi:
+  name_en: Pound Pressure Index
+  name_ar: مؤشر الضغط على الجنيه
+  min_coverage_pct: 60
+  subindices:
+    external:
+      name_en: External
+      name_ar: القطاع الخارجي
+      weight: 25
+      inputs:
+        - {series: suez_ratio_7dma, sign: -1}
+        - {series: nir, sign: -1}
+        - {series: nir_chg_3m, sign: -1}
+        - {series: remittances_yoy, sign: -1}
+        - {series: bop_ca_fy, sign: -1}
+    monetary:
+      name_en: Monetary & Markets
+      name_ar: الفايدة والأسواق
+      weight: 20
+      inputs:
+        - {series: fx_chg_20d, sign: 1}
+        - {series: fx_vol_20d, sign: 1}
+        - {series: real_headline, sign: -1}
+        - {series: fx_market_gap_pct, sign: 1}
+        - {series: gold_gap_pct, sign: 1}
+    fiscal:
+      name_en: Fiscal & Debt
+      name_ar: المالية العامة والديون
+      weight: 15
+      inputs:
+        - {series: tbill_12m_yield, sign: 1}
+        - {series: tbill_12m_btc, sign: -1}
+        - {series: tbill_12m_accepted_ratio, sign: -1}
+        - {series: debt_service_next_year_to_nir, sign: 1}
+    commodities:
+      name_en: Commodities & Energy
+      name_ar: السلع والطاقة
+      weight: 15
+      inputs:
+        - {series: brent_gap, sign: 1}
+        - {series: brent_fut, sign: 1}
+        - {series: ttf_fut, sign: 1}
+        - {series: wheat, sign: 1}
+        - {series: hormuz_ratio_7dma, sign: -1}
+    geopolitical:
+      name_en: Geopolitical
+      name_ar: السياسة والمنطقة
+      weight: 15
+      inputs:
+        - {series: gpr_daily, sign: 1}
+        - {series: gpr_egypt, sign: 1}
+        - {series: gdelt_egypt_economy_tone, sign: -1}
+        - {series: babelmandeb_ratio_7dma, sign: -1}
+    global:
+      name_en: Global / US
+      name_ar: العالم وأمريكا
+      weight: 10
+      inputs:
+        - {series: vix, sign: 1}
+        - {series: dxy, sign: 1}
+        - {series: us10y, sign: 1}
+        - {series: em_spread_proxy, sign: 1}
+        - {series: fed_funds, sign: 1}
+
+extra:
+  inflation:
+    name_en: Inflation Pressure Index
+    name_ar: مؤشر ضغط التضخم
+    inputs:
+      - {series: cpi_core_mom, sign: 1}
+      - {series: cpi_urban_yoy, sign: 1}
+      - {series: fx_chg_3m, sign: 1}
+      - {series: brent_egp_qavg_chg, sign: 1}
+      - {series: cpi_fv_yoy, sign: 1}
+    rules: {MO02: 1, MO04: 1, MO05: 1, MO06: 1, MO07: 1, EC02: 1, EC04: 1}
+  growth:
+    name_en: Growth Index
+    name_ar: مؤشر النمو
+    inputs:
+      - {series: pmi, sign: 1}
+      - {series: gdp_growth, sign: 1}
+      - {series: real_headline, sign: -1}
+      - {series: credit_private, sign: 1}
+    rules: {RE01: -1, MO08: -1}

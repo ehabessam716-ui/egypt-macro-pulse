@@ -1,0 +1,18 @@
+# secrets & environments
+.env
+.venv/
+.tools/
+# generated (rebuilt locally and in GitHub Actions)
+data/*
+!data/manual/
+exports/
+logs/
+site/
+briefs/
+reports/weekly/
+reports/alerts_next48h.md
+reports/env_check/
+__pycache__/
+*.pyc
+*.egg-info/
+ops/windows/

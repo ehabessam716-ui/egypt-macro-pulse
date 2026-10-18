@@ -1,0 +1,234 @@
+# Egypt Macro Pulse — indicator catalog (SPEC §3)
+# access: FREE_API / FREE_FILE / SCRAPE / MANUAL / PAID / DERIVED
+# frequency: daily / weekly / monthly / quarterly / fiscal_year (Egypt FY Jul–Jun) / annual / per_auction / event
+# obs_date convention: daily = the day; monthly = 1st of month; quarterly = 1st day of quarter;
+#   fiscal_year = 1 July of the FY start year; annual = 1 January.
+# stale_after_days: daily = Cairo/global BUSINESS days since obs_date; others = calendar days since period end.
+# step: true = a regime value (policy rate, pump price) that stays in force until changed.
+
+defaults:
+  stale_after_days: {daily: 3, weekly: 10, monthly: 45, quarterly: 120, fiscal_year: 450, annual: 450, per_auction: 21, event: 100000}
+
+series:
+  # ---------------------------------------------------------------- 3.1 FX & markets
+  - {id: fx_cbe_official, name_en: "USD/EGP CBE official (buy)", name_ar: "سعر الدولار الرسمي في البنك المركزي (شراء)", domain: fx, frequency: daily, unit: EGP per USD, source: cbe_fx_rates, access: SCRAPE, calendar: egypt, fallback: fx_market, definition_note: "CBE average market rate, buy side, published Sun–Thu"}
+  - {id: fx_cbe_official_sell, name_en: "USD/EGP CBE official (sell)", name_ar: "سعر الدولار الرسمي في البنك المركزي (بيع)", domain: fx, frequency: daily, unit: EGP per USD, source: cbe_fx_rates, access: SCRAPE, calendar: egypt}
+  - {id: fx_market, name_en: "USD/EGP market close (Yahoo, unofficial)", name_ar: "سعر الدولار في السوق العالمي (غير رسمي)", domain: fx, frequency: daily, unit: EGP per USD, source: yahoo_markets, endpoint: "EGP=X", access: FREE_API, calendar: all}
+  - {id: fx_parallel, name_en: "USD/EGP parallel market", name_ar: "سعر الدولار في السوق الموازية", domain: fx, frequency: event, unit: EGP per USD, source: manual, access: MANUAL}
+  - {id: egx_foreign_net, name_en: "EGX foreigners' net buy/sell", name_ar: "صافي تعاملات الأجانب في البورصة", domain: fx, frequency: daily, unit: EGP mn, source: egx, access: MANUAL, calendar: egypt, definition_note: "EGX site resets scripted connections; MANUAL"}
+  - {id: foreign_tbills_holdings, name_en: "Non-resident holdings of T-bills", name_ar: "حيازة الأجانب لأذون الخزانة", domain: fx, frequency: monthly, unit: USD bn, source: manual, access: MANUAL}
+  - {id: tbill_3m_yield, name_en: "T-bill 91-day weighted avg yield", name_ar: "عائد أذون الخزانة لأجل 3 شهور", domain: fx, frequency: per_auction, unit: "%", source: cbe_auctions, access: SCRAPE, definition_note: "obs_date = issue date of the auction"}
+  - {id: tbill_6m_yield, name_en: "T-bill 182-day weighted avg yield", name_ar: "عائد أذون الخزانة لأجل 6 شهور", domain: fx, frequency: per_auction, unit: "%", source: cbe_auctions, access: SCRAPE}
+  - {id: tbill_9m_yield, name_en: "T-bill 273-day weighted avg yield", name_ar: "عائد أذون الخزانة لأجل 9 شهور", domain: fx, frequency: per_auction, unit: "%", source: cbe_auctions, access: SCRAPE}
+  - {id: tbill_12m_yield, name_en: "T-bill 1-year (357/364-day) weighted avg yield", name_ar: "عائد أذون الخزانة لأجل سنة", domain: fx, frequency: per_auction, unit: "%", source: cbe_auctions, access: SCRAPE}
+  - {id: tbill_3m_btc, name_en: "T-bill 91-day bid-to-cover", name_ar: "نسبة التغطية لأذون 3 شهور", domain: fx, frequency: per_auction, unit: ratio, source: cbe_auctions, access: SCRAPE, definition_note: "submitted / required (offered) amount"}
+  - {id: tbill_6m_btc, name_en: "T-bill 182-day bid-to-cover", name_ar: "نسبة التغطية لأذون 6 شهور", domain: fx, frequency: per_auction, unit: ratio, source: cbe_auctions, access: SCRAPE}
+  - {id: tbill_9m_btc, name_en: "T-bill 273-day bid-to-cover", name_ar: "نسبة التغطية لأذون 9 شهور", domain: fx, frequency: per_auction, unit: ratio, source: cbe_auctions, access: SCRAPE}
+  - {id: tbill_12m_btc, name_en: "T-bill 1-year bid-to-cover", name_ar: "نسبة التغطية لأذون سنة", domain: fx, frequency: per_auction, unit: ratio, source: cbe_auctions, access: SCRAPE}
+  - {id: tbill_3m_accepted_ratio, name_en: "T-bill 91-day accepted / offered", name_ar: "المقبول إلى المطلوب لأذون 3 شهور", domain: fx, frequency: per_auction, unit: ratio, source: cbe_auctions, access: SCRAPE}
+  - {id: tbill_6m_accepted_ratio, name_en: "T-bill 182-day accepted / offered", name_ar: "المقبول إلى المطلوب لأذون 6 شهور", domain: fx, frequency: per_auction, unit: ratio, source: cbe_auctions, access: SCRAPE}
+  - {id: tbill_9m_accepted_ratio, name_en: "T-bill 273-day accepted / offered", name_ar: "المقبول إلى المطلوب لأذون 9 شهور", domain: fx, frequency: per_auction, unit: ratio, source: cbe_auctions, access: SCRAPE}
+  - {id: tbill_12m_accepted_ratio, name_en: "T-bill 1-year accepted / offered", name_ar: "المقبول إلى المطلوب لأذون سنة", domain: fx, frequency: per_auction, unit: ratio, source: cbe_auctions, access: SCRAPE}
+  - {id: eurobond_yield, name_en: "Egypt USD Eurobond yield (key maturity)", name_ar: "عائد سندات مصر الدولارية", domain: fx, frequency: daily, unit: "%", source: manual, access: MANUAL}
+  - {id: cds_5y, name_en: "Egypt 5Y CDS", name_ar: "تكلفة التأمين على ديون مصر لخمس سنين", domain: fx, frequency: daily, unit: bp, source: manual, access: PAID, definition_note: "Bloomberg/Refinitiv only; MANUAL weekly from press"}
+
+  # ---------------------------------------------------------------- 3.2 Monetary
+  - {id: cbe_odr, name_en: "CBE overnight deposit rate", name_ar: "سعر عائد الإيداع لليلة واحدة", domain: monetary, frequency: event, unit: "%", source: cbe_mpc, access: SCRAPE, step: true}
+  - {id: cbe_olr, name_en: "CBE overnight lending rate", name_ar: "سعر عائد الإقراض لليلة واحدة", domain: monetary, frequency: event, unit: "%", source: cbe_mpc, access: SCRAPE, step: true}
+  - {id: cbe_mainop, name_en: "CBE main operation rate", name_ar: "سعر العملية الرئيسية", domain: monetary, frequency: event, unit: "%", source: cbe_mpc, access: SCRAPE, step: true}
+  - {id: cbe_discount, name_en: "CBE discount rate", name_ar: "سعر الائتمان والخصم", domain: monetary, frequency: event, unit: "%", source: cbe_mpc, access: SCRAPE, step: true}
+  - {id: cbe_mpc_decision, name_en: "MPC decision (-1 cut, 0 hold, +1 hike)", name_ar: "قرار لجنة السياسة النقدية", domain: monetary, frequency: event, unit: code, source: cbe_news, access: SCRAPE}
+  - {id: cbe_mpc_tone, name_en: "MPC statement tone (hawkish minus dovish words per 1000)", name_ar: "نبرة بيان لجنة السياسة النقدية", domain: monetary, frequency: event, unit: score, source: cbe_news, access: SCRAPE, definition_note: "tool word-count heuristic on the statement text"}
+  - {id: interbank_overnight, name_en: "Cairo overnight index average (CONIA)", name_ar: "متوسط سعر الإقراض بين البنوك لليلة", domain: monetary, frequency: daily, unit: "%", source: cbe_home, access: SCRAPE, calendar: egypt, definition_note: "value shown on the CBE homepage, dated by the homepage FX date"}
+  - {id: m2, name_en: "Broad money M2 (y/y)", name_ar: "نمو السيولة المحلية", domain: monetary, frequency: monthly, unit: "%", source: manual, access: MANUAL}
+  - {id: credit_private, name_en: "Bank credit to private sector (y/y)", name_ar: "نمو الائتمان للقطاع الخاص", domain: monetary, frequency: monthly, unit: "%", source: manual, access: MANUAL}
+  - {id: credit_gov, name_en: "Bank credit to government (y/y)", name_ar: "نمو الائتمان للحكومة", domain: monetary, frequency: monthly, unit: "%", source: manual, access: MANUAL}
+  - {id: nfa_banks, name_en: "Net foreign assets — banking system", name_ar: "صافي الأصول الأجنبية للجهاز المصرفي", domain: monetary, frequency: monthly, unit: USD bn, source: manual, access: MANUAL}
+  - {id: nfa_cbe, name_en: "Net foreign assets — CBE", name_ar: "صافي الأصول الأجنبية للبنك المركزي", domain: monetary, frequency: monthly, unit: USD bn, source: manual, access: MANUAL}
+  - {id: nir, name_en: "Net international reserves", name_ar: "صافي الاحتياطيات الدولية", domain: monetary, frequency: monthly, unit: USD mn, source: cbe_news, access: SCRAPE, release_lag_days: 7, stale_after_days: 45, definition_note: "end-of-month stock; CBE news headline (provisional)"}
+  - {id: nir_gold, name_en: "NIR — gold", name_ar: "الاحتياطي — ذهب", domain: monetary, frequency: monthly, unit: USD mn, source: manual, access: MANUAL}
+  - {id: nir_fx, name_en: "NIR — foreign currencies", name_ar: "الاحتياطي — عملات أجنبية", domain: monetary, frequency: monthly, unit: USD mn, source: manual, access: MANUAL}
+  - {id: nir_sdr, name_en: "NIR — SDR", name_ar: "الاحتياطي — حقوق السحب الخاصة", domain: monetary, frequency: monthly, unit: USD mn, source: manual, access: MANUAL}
+
+  # ---------------------------------------------------------------- 3.3 Inflation
+  - {id: cpi_urban_yoy, name_en: "Urban headline CPI (y/y)", name_ar: "التضخم السنوي في المدن", domain: inflation, frequency: monthly, unit: "%", source: cbe_cpi, access: SCRAPE, release_lag_days: 10, stale_after_days: 45}
+  - {id: cpi_urban_mom, name_en: "Urban headline CPI (m/m)", name_ar: "التضخم الشهري في المدن", domain: inflation, frequency: monthly, unit: "%", source: cbe_cpi, access: SCRAPE, release_lag_days: 10}
+  - {id: cpi_core_yoy, name_en: "Core CPI (y/y)", name_ar: "التضخم الأساسي السنوي", domain: inflation, frequency: monthly, unit: "%", source: cbe_cpi, access: SCRAPE, release_lag_days: 11}
+  - {id: cpi_core_mom, name_en: "Core CPI (m/m)", name_ar: "التضخم الأساسي الشهري", domain: inflation, frequency: monthly, unit: "%", source: cbe_cpi, access: SCRAPE, release_lag_days: 11}
+  - {id: cpi_regulated_yoy, name_en: "Regulated items CPI (y/y)", name_ar: "تضخم السلع المسعرة إداريا (سنوي)", domain: inflation, frequency: monthly, unit: "%", source: cbe_cpi, access: SCRAPE}
+  - {id: cpi_regulated_mom, name_en: "Regulated items CPI (m/m)", name_ar: "تضخم السلع المسعرة إداريا (شهري)", domain: inflation, frequency: monthly, unit: "%", source: cbe_cpi, access: SCRAPE}
+  - {id: cpi_fv_yoy, name_en: "Fruits & vegetables CPI (y/y)", name_ar: "تضخم الخضار والفاكهة (سنوي)", domain: inflation, frequency: monthly, unit: "%", source: cbe_cpi, access: SCRAPE}
+  - {id: cpi_fv_mom, name_en: "Fruits & vegetables CPI (m/m)", name_ar: "تضخم الخضار والفاكهة (شهري)", domain: inflation, frequency: monthly, unit: "%", source: cbe_cpi, access: SCRAPE}
+  - {id: cpi_national_yoy, name_en: "Nationwide CPI (y/y)", name_ar: "التضخم السنوي على مستوى الجمهورية", domain: inflation, frequency: monthly, unit: "%", source: capmas, access: MANUAL, definition_note: "CAPMAS site is a JS-only app; MANUAL"}
+  - {id: cpi_food_yoy, name_en: "Food & non-alcoholic beverages CPI (y/y)", name_ar: "تضخم الطعام والمشروبات", domain: inflation, frequency: monthly, unit: "%", source: capmas, access: MANUAL}
+  - {id: cpi_food_mom, name_en: "Food CPI (m/m)", name_ar: "تضخم الطعام الشهري", domain: inflation, frequency: monthly, unit: "%", source: capmas, access: MANUAL}
+  - {id: infl_expectations, name_en: "CBE projected average inflation (next FY)", name_ar: "توقعات البنك المركزي لمتوسط التضخم", domain: inflation, frequency: event, unit: "%", source: manual, access: MANUAL, step: true}
+  - {id: infl_target, name_en: "CBE inflation target (midpoint)", name_ar: "مستهدف التضخم للبنك المركزي", domain: inflation, frequency: event, unit: "%", source: manual, access: MANUAL, step: true}
+
+  # ---------------------------------------------------------------- 3.4 External sector
+  - {id: remittances, name_en: "Remittances (monthly)", name_ar: "تحويلات المصريين بالخارج (شهري)", domain: external, frequency: monthly, unit: USD bn, source: cbe_news, access: SCRAPE, release_lag_days: 45, stale_after_days: 80}
+  - {id: remittances_yoy, name_en: "Remittances y/y (monthly)", name_ar: "نمو التحويلات السنوي", domain: external, frequency: monthly, unit: "%", source: cbe_news, access: SCRAPE, stale_after_days: 80}
+  - {id: remittances_ytd, name_en: "Remittances calendar-year-to-date", name_ar: "التحويلات منذ أول السنة", domain: external, frequency: monthly, unit: USD bn, source: cbe_news, access: SCRAPE, stale_after_days: 80, definition_note: "January to the stated month"}
+  - {id: remittances_fy, name_en: "Remittances (fiscal year, BoP)", name_ar: "التحويلات في السنة المالية", domain: external, frequency: fiscal_year, unit: USD bn, source: cbe_bop, access: SCRAPE}
+  - {id: bop_ca_fy, name_en: "Current account balance (FY)", name_ar: "رصيد الحساب الجاري (سنة مالية)", domain: external, frequency: fiscal_year, unit: USD bn, source: cbe_bop, access: SCRAPE, definition_note: "negative = deficit"}
+  - {id: bop_overall_fy, name_en: "Overall BoP balance (FY)", name_ar: "الميزان الكلي للمدفوعات", domain: external, frequency: fiscal_year, unit: USD bn, source: cbe_bop, access: SCRAPE}
+  - {id: capital_financial_net_fy, name_en: "Capital & financial account net inflow (FY)", name_ar: "صافي تدفقات الحساب الرأسمالي والمالي", domain: external, frequency: fiscal_year, unit: USD bn, source: cbe_bop, access: SCRAPE}
+  - {id: trade_balance_fy, name_en: "Merchandise trade balance (FY)", name_ar: "الميزان التجاري السلعي", domain: external, frequency: fiscal_year, unit: USD bn, source: cbe_bop, access: SCRAPE, definition_note: "negative = deficit"}
+  - {id: trade_nonoil_balance_fy, name_en: "Non-oil trade balance (FY)", name_ar: "الميزان التجاري غير البترولي", domain: external, frequency: fiscal_year, unit: USD bn, source: cbe_bop, access: SCRAPE}
+  - {id: trade_oil_balance_fy, name_en: "Oil trade balance (FY)", name_ar: "الميزان التجاري البترولي", domain: external, frequency: fiscal_year, unit: USD bn, source: cbe_bop, access: SCRAPE}
+  - {id: imports_nonoil_fy, name_en: "Non-oil imports (FY)", name_ar: "الواردات غير البترولية", domain: external, frequency: fiscal_year, unit: USD bn, source: cbe_bop, access: SCRAPE}
+  - {id: imports_oil_fy, name_en: "Oil imports (FY)", name_ar: "الواردات البترولية", domain: external, frequency: fiscal_year, unit: USD bn, source: cbe_bop, access: SCRAPE}
+  - {id: exports_nonoil_fy, name_en: "Non-oil exports (FY)", name_ar: "الصادرات غير البترولية", domain: external, frequency: fiscal_year, unit: USD bn, source: cbe_bop, access: SCRAPE}
+  - {id: exports_oil_fy, name_en: "Oil exports (FY)", name_ar: "الصادرات البترولية", domain: external, frequency: fiscal_year, unit: USD bn, source: cbe_bop, access: SCRAPE}
+  - {id: invest_income_balance_fy, name_en: "Investment income balance (FY)", name_ar: "صافي دخل الاستثمار", domain: external, frequency: fiscal_year, unit: USD bn, source: cbe_bop, access: SCRAPE, definition_note: "negative = net payments abroad"}
+  - {id: services_surplus_fy, name_en: "Services surplus (FY)", name_ar: "فائض الخدمات", domain: external, frequency: fiscal_year, unit: USD bn, source: cbe_bop, access: SCRAPE}
+  - {id: tourism_receipts_fy, name_en: "Tourism revenues (FY, BoP)", name_ar: "إيرادات السياحة (سنة مالية)", domain: external, frequency: fiscal_year, unit: USD bn, source: cbe_bop, access: SCRAPE}
+  - {id: suez_receipts_fy, name_en: "Suez Canal transit receipts (FY, BoP)", name_ar: "إيرادات المرور في قناة السويس (ميزان المدفوعات)", domain: external, frequency: fiscal_year, unit: USD bn, source: cbe_bop, access: SCRAPE, definition_note: "BoP definition; differs from SCA revenue"}
+  - {id: fdi_net_fy, name_en: "Net FDI inflow (FY)", name_ar: "صافي الاستثمار الأجنبي المباشر", domain: external, frequency: fiscal_year, unit: USD bn, source: cbe_bop, access: SCRAPE}
+  - {id: portfolio_net_fy, name_en: "Portfolio investment in Egypt, net (FY)", name_ar: "صافي استثمارات الحافظة", domain: external, frequency: fiscal_year, unit: USD bn, source: cbe_bop, access: SCRAPE}
+  - {id: tourism_arrivals_ytd, name_en: "Tourist arrivals, calendar YTD", name_ar: "عدد السياح منذ أول السنة", domain: external, frequency: monthly, unit: mn, source: manual, access: MANUAL, stale_after_days: 120}
+  - {id: tourism_receipts_ytd, name_en: "Tourism revenues, calendar YTD (IDSC)", name_ar: "إيرادات السياحة منذ أول السنة", domain: external, frequency: monthly, unit: USD bn, source: manual, access: MANUAL, stale_after_days: 120}
+  - {id: suez_revenue_fy, name_en: "Suez Canal revenue (FY, SCA)", name_ar: "إيرادات قناة السويس (هيئة القناة)", domain: external, frequency: fiscal_year, unit: USD bn, source: manual, access: MANUAL}
+  - {id: suez_transits, name_en: "Suez Canal daily transits", name_ar: "عدد السفن العابرة لقناة السويس يوميا", domain: external, frequency: daily, unit: vessels, source: portwatch_chokepoints, endpoint: chokepoint1, access: FREE_API, calendar: all, stale_after_days: 12, definition_note: "PortWatch n_total; updated weekly (Tuesdays)"}
+  - {id: suez_capacity, name_en: "Suez Canal daily transit capacity", name_ar: "حمولة السفن العابرة لقناة السويس", domain: external, frequency: daily, unit: metric tons, source: portwatch_chokepoints, endpoint: chokepoint1, access: FREE_API, calendar: all, stale_after_days: 12}
+  - {id: babelmandeb_transits, name_en: "Bab el-Mandeb daily transits", name_ar: "عدد السفن العابرة لباب المندب", domain: external, frequency: daily, unit: vessels, source: portwatch_chokepoints, endpoint: chokepoint4, access: FREE_API, calendar: all, stale_after_days: 12}
+  - {id: babelmandeb_capacity, name_en: "Bab el-Mandeb daily capacity", name_ar: "حمولة السفن في باب المندب", domain: external, frequency: daily, unit: metric tons, source: portwatch_chokepoints, endpoint: chokepoint4, access: FREE_API, calendar: all, stale_after_days: 12}
+  - {id: hormuz_transits, name_en: "Strait of Hormuz daily transits", name_ar: "عدد السفن العابرة لمضيق هرمز", domain: external, frequency: daily, unit: vessels, source: portwatch_chokepoints, endpoint: chokepoint6, access: FREE_API, calendar: all, stale_after_days: 12}
+  - {id: hormuz_capacity, name_en: "Strait of Hormuz daily capacity", name_ar: "حمولة السفن في مضيق هرمز", domain: external, frequency: daily, unit: metric tons, source: portwatch_chokepoints, endpoint: chokepoint6, access: FREE_API, calendar: all, stale_after_days: 12}
+
+  # ---------------------------------------------------------------- 3.5 Fiscal & debt
+  - {id: ext_debt_stock, name_en: "External debt stock", name_ar: "رصيد الدين الخارجي", domain: fiscal, frequency: quarterly, unit: USD bn, source: manual, access: MANUAL, stale_after_days: 200}
+  - {id: ext_debt_gdp, name_en: "External debt (% of GDP)", name_ar: "الدين الخارجي إلى الناتج", domain: fiscal, frequency: quarterly, unit: "% GDP", source: manual, access: MANUAL, stale_after_days: 200}
+  - {id: ext_debt_short_term, name_en: "Short-term external debt", name_ar: "الدين الخارجي قصير الأجل", domain: fiscal, frequency: quarterly, unit: USD bn, source: manual, access: MANUAL}
+  - {id: ext_debt_service_actual, name_en: "Actual external debt service", name_ar: "خدمة الدين الخارجي الفعلية", domain: fiscal, frequency: event, unit: USD bn, source: manual, access: MANUAL, definition_note: "period stated in obs_note (e.g. first 9 months of a FY)"}
+  - {id: ext_debt_service_sched, name_en: "Projected MLT PPG external debt service (calendar year)", name_ar: "خدمة الدين الخارجي المتوقعة", domain: fiscal, frequency: annual, unit: USD bn, source: manual, access: MANUAL, stale_after_days: 100000, definition_note: "medium/long-term public & publicly guaranteed; calendar year"}
+  - {id: budget_balance, name_en: "Overall budget balance (% GDP)", name_ar: "عجز الموازنة الكلي", domain: fiscal, frequency: fiscal_year, unit: "% GDP", source: manual, access: MANUAL}
+  - {id: primary_balance, name_en: "Primary balance (% GDP)", name_ar: "الفائض الأولي", domain: fiscal, frequency: fiscal_year, unit: "% GDP", source: manual, access: MANUAL}
+  - {id: gov_debt_gdp, name_en: "General government debt (% GDP)", name_ar: "الدين الحكومي إلى الناتج", domain: fiscal, frequency: fiscal_year, unit: "% GDP", source: manual, access: MANUAL}
+  - {id: interest_to_revenue, name_en: "Interest payments / revenue", name_ar: "الفوايد إلى الإيرادات", domain: fiscal, frequency: fiscal_year, unit: "%", source: manual, access: MANUAL}
+  - {id: budget_oil_assumption, name_en: "Budget oil price assumption", name_ar: "سعر البترول في الموازنة", domain: fiscal, frequency: event, unit: USD/bbl, source: manual, access: MANUAL, step: true}
+  - {id: dom_debt_maturities, name_en: "T-bill maturity wall (next month)", name_ar: "أذون مستحقة الشهر الجاي", domain: fiscal, frequency: monthly, unit: EGP bn, source: manual, access: MANUAL}
+  - {id: imf_weo_gdp, name_en: "IMF WEO real GDP growth (Egypt)", name_ar: "توقعات صندوق النقد لنمو الاقتصاد", domain: fiscal, frequency: annual, unit: "%", source: imf_datamapper, endpoint: NGDP_RPCH, access: FREE_API, stale_after_days: 100000, definition_note: "years after the latest actual are IMF projections"}
+  - {id: imf_weo_cpi, name_en: "IMF WEO inflation, average (Egypt)", name_ar: "توقعات صندوق النقد للتضخم", domain: fiscal, frequency: annual, unit: "%", source: imf_datamapper, endpoint: PCPIPCH, access: FREE_API, stale_after_days: 100000}
+  - {id: imf_weo_ca, name_en: "IMF WEO current account (% GDP, Egypt)", name_ar: "توقعات صندوق النقد للحساب الجاري", domain: fiscal, frequency: annual, unit: "% GDP", source: imf_datamapper, endpoint: BCA_NGDPD, access: FREE_API, stale_after_days: 100000}
+  - {id: imf_weo_debt, name_en: "IMF WEO gross government debt (% GDP, Egypt)", name_ar: "توقعات صندوق النقد للدين الحكومي", domain: fiscal, frequency: annual, unit: "% GDP", source: imf_datamapper, endpoint: GGXWDG_NGDP, access: FREE_API, stale_after_days: 100000}
+  - {id: wb_gdp_growth, name_en: "World Bank real GDP growth (Egypt)", name_ar: "نمو الاقتصاد حسب البنك الدولي", domain: real, frequency: annual, unit: "%", source: worldbank_api, endpoint: NY.GDP.MKTP.KD.ZG, access: FREE_API, stale_after_days: 800}
+  - {id: consensus, name_en: "Consensus forecasts", name_ar: "متوسط توقعات المحللين", domain: fiscal, frequency: event, unit: various, source: manual, access: PAID}
+
+  # ---------------------------------------------------------------- 3.6 Real economy
+  - {id: pmi, name_en: "S&P Global Egypt PMI (headline)", name_ar: "مؤشر مديري المشتريات لمصر", domain: real, frequency: monthly, unit: index, source: sp_pmi, access: SCRAPE, release_lag_days: 5, stale_after_days: 40}
+  - {id: saudi_pmi, name_en: "Riyad Bank Saudi Arabia PMI", name_ar: "مؤشر مديري المشتريات للسعودية", domain: global, frequency: monthly, unit: index, source: sp_pmi, access: SCRAPE, stale_after_days: 40}
+  - {id: uae_pmi, name_en: "S&P Global UAE PMI", name_ar: "مؤشر مديري المشتريات للإمارات", domain: global, frequency: monthly, unit: index, source: sp_pmi, access: SCRAPE, stale_after_days: 40}
+  - {id: gdp_growth, name_en: "Real GDP growth (quarter, y/y)", name_ar: "نمو الاقتصاد الحقيقي (ربع سنوي)", domain: real, frequency: quarterly, unit: "%", source: cbe_news, access: SCRAPE, stale_after_days: 200, definition_note: "as quoted in the latest MPC press release"}
+  - {id: gdp_growth_fy, name_en: "Real GDP growth (fiscal year)", name_ar: "نمو الاقتصاد في السنة المالية", domain: real, frequency: fiscal_year, unit: "%", source: cbe_news, access: SCRAPE}
+  - {id: unemployment, name_en: "Unemployment rate", name_ar: "معدل البطالة", domain: real, frequency: quarterly, unit: "%", source: capmas, access: MANUAL}
+  - {id: lng_imports, name_en: "LNG imports (period in note)", name_ar: "واردات الغاز المسال", domain: real, frequency: event, unit: bcm, source: manual, access: MANUAL}
+  - {id: gas_import_budget, name_en: "Gas import budget (FY)", name_ar: "ميزانية استيراد الغاز", domain: real, frequency: fiscal_year, unit: USD bn, source: manual, access: MANUAL}
+  - {id: lng_cargoes, name_en: "LNG cargoes per month", name_ar: "عدد شحنات الغاز المسال", domain: real, frequency: monthly, unit: cargoes, source: manual, access: MANUAL}
+  - {id: gas_production, name_en: "Domestic gas production", name_ar: "إنتاج الغاز المحلي", domain: real, frequency: monthly, unit: bcm, source: manual, access: MANUAL}
+  - {id: wheat_reserve_months, name_en: "Wheat strategic reserve (months)", name_ar: "مخزون القمح بالشهور", domain: real, frequency: event, unit: months, source: manual, access: MANUAL}
+
+  # ---------------------------------------------------------------- 3.7 Energy & commodities
+  - {id: brent, name_en: "Brent spot (EIA via FRED)", name_ar: "سعر خام برنت الفوري", domain: energy, frequency: daily, unit: USD/bbl, source: fred_csv, endpoint: DCOILBRENTEU, fallback: brent_fut, access: FREE_FILE, calendar: global, stale_after_days: 7, definition_note: "dated Brent spot; FRED publishes with ~1 week lag"}
+  - {id: brent_fut, name_en: "Brent front-month futures (Yahoo BZ=F)", name_ar: "سعر عقود برنت الآجلة", domain: energy, frequency: daily, unit: USD/bbl, source: yahoo_markets, endpoint: "BZ=F", access: FREE_API, calendar: global}
+  - {id: wti, name_en: "WTI spot (EIA via FRED)", name_ar: "سعر خام غرب تكساس", domain: energy, frequency: daily, unit: USD/bbl, source: fred_csv, endpoint: DCOILWTICO, fallback: wti_fut, access: FREE_FILE, calendar: global, stale_after_days: 7}
+  - {id: wti_fut, name_en: "WTI front-month futures (Yahoo CL=F)", name_ar: "عقود خام غرب تكساس الآجلة", domain: energy, frequency: daily, unit: USD/bbl, source: yahoo_markets, endpoint: "CL=F", access: FREE_API, calendar: global}
+  - {id: henry_hub, name_en: "Henry Hub natural gas spot", name_ar: "سعر الغاز الأمريكي", domain: energy, frequency: daily, unit: USD/MMBtu, source: fred_csv, endpoint: DHHNGSP, access: FREE_FILE, calendar: global, stale_after_days: 7}
+  - {id: ttf, name_en: "European gas (TTF), monthly", name_ar: "سعر الغاز الأوروبي (شهري)", domain: energy, frequency: monthly, unit: USD/MMBtu, source: fred_csv, endpoint: PNGASEUUSDM, access: FREE_FILE, stale_after_days: 120}
+  - {id: ttf_fut, name_en: "TTF front-month futures (Yahoo TTF=F)", name_ar: "عقود الغاز الأوروبي الآجلة", domain: energy, frequency: daily, unit: EUR/MWh, source: yahoo_markets, endpoint: "TTF=F", access: FREE_API, calendar: global}
+  - {id: wheat, name_en: "CBOT wheat futures (Yahoo ZW=F)", name_ar: "سعر القمح في بورصة شيكاغو", domain: energy, frequency: daily, unit: US cents/bu, source: yahoo_markets, endpoint: "ZW=F", access: FREE_API, calendar: global}
+  - {id: wheat_monthly, name_en: "Global wheat price (IMF, monthly)", name_ar: "سعر القمح العالمي (شهري)", domain: energy, frequency: monthly, unit: USD/mt, source: fred_csv, endpoint: PWHEAMTUSDM, access: FREE_FILE, stale_after_days: 120}
+  - {id: eia_steo_brent, name_en: "EIA STEO Brent forecast", name_ar: "توقعات إدارة الطاقة الأمريكية لبرنت", domain: energy, frequency: monthly, unit: USD/bbl, source: manual, access: MANUAL, definition_note: "EIA API needs a key — skipped by policy"}
+  - {id: freight_wci, name_en: "Drewry WCI container freight", name_ar: "مؤشر أسعار شحن الحاويات", domain: energy, frequency: weekly, unit: USD/FEU, source: manual, access: MANUAL}
+  - {id: fuel_95, name_en: "Egypt pump price, 95 octane", name_ar: "سعر بنزين 95", domain: energy, frequency: event, unit: EGP/litre, source: manual, access: MANUAL, step: true}
+  - {id: fuel_92, name_en: "Egypt pump price, 92 octane", name_ar: "سعر بنزين 92", domain: energy, frequency: event, unit: EGP/litre, source: manual, access: MANUAL, step: true}
+  - {id: fuel_80, name_en: "Egypt pump price, 80 octane", name_ar: "سعر بنزين 80", domain: energy, frequency: event, unit: EGP/litre, source: manual, access: MANUAL, step: true}
+  - {id: fuel_diesel, name_en: "Egypt pump price, diesel", name_ar: "سعر السولار", domain: energy, frequency: event, unit: EGP/litre, source: manual, access: MANUAL, step: true}
+  - {id: fuel_cng, name_en: "Egypt CNG price", name_ar: "سعر غاز السيارات", domain: energy, frequency: event, unit: EGP/m3, source: manual, access: MANUAL, step: true}
+
+  # ---------------------------------------------------------------- 3.8 Gold
+  - {id: xauusd, name_en: "Gold futures (Yahoo GC=F)", name_ar: "سعر أوقية الدهب العالمي", domain: gold, frequency: daily, unit: USD/oz, source: yahoo_markets, endpoint: "GC=F", access: FREE_API, calendar: global}
+  - {id: xauusd_spot, name_en: "Gold spot at local scrape time (banklive)", name_ar: "سعر الأوقية لحظة قراءة السعر المحلي", domain: gold, frequency: daily, unit: USD/oz, source: gold_banklive, access: SCRAPE, calendar: all}
+  - {id: xagusd, name_en: "Silver futures (Yahoo SI=F)", name_ar: "سعر أوقية الفضة", domain: gold, frequency: daily, unit: USD/oz, source: yahoo_markets, endpoint: "SI=F", access: FREE_API, calendar: global}
+  - {id: gold_eg_21k, name_en: "Egypt gold 21K per gram", name_ar: "سعر جرام الدهب عيار 21", domain: gold, frequency: daily, unit: EGP/gram, source: gold_banklive, fallback: gold_isagha, access: SCRAPE, calendar: all, definition_note: "banklive 'Buying Price' column at scrape time"}
+  - {id: gold_eg_24k, name_en: "Egypt gold 24K per gram", name_ar: "سعر جرام الدهب عيار 24", domain: gold, frequency: daily, unit: EGP/gram, source: gold_banklive, fallback: gold_isagha, access: SCRAPE, calendar: all}
+  - {id: gold_eg_pound, name_en: "Egypt gold pound (8g 21K)", name_ar: "سعر الجنيه الدهب", domain: gold, frequency: daily, unit: EGP, source: gold_banklive, access: SCRAPE, calendar: all}
+  - {id: cb_gold_buying, name_en: "Central-bank gold purchases (WGC)", name_ar: "مشتريات البنوك المركزية من الدهب", domain: gold, frequency: quarterly, unit: tonnes, source: manual, access: MANUAL}
+
+  # ---------------------------------------------------------------- 3.9 Global / US
+  - {id: fed_funds, name_en: "Effective fed funds rate", name_ar: "سعر الفايدة الأمريكية الفعلي", domain: global, frequency: daily, unit: "%", source: fred_csv, endpoint: DFF, access: FREE_FILE, calendar: all, stale_after_days: 6}
+  - {id: us_cpi, name_en: "US CPI index (SA)", name_ar: "مؤشر أسعار المستهلكين الأمريكي", domain: global, frequency: monthly, unit: index, source: fred_csv, endpoint: CPIAUCSL, access: FREE_FILE, stale_after_days: 50}
+  - {id: us_core_cpi, name_en: "US core CPI index (SA)", name_ar: "مؤشر الأسعار الأساسي الأمريكي", domain: global, frequency: monthly, unit: index, source: fred_csv, endpoint: CPILFESL, access: FREE_FILE, stale_after_days: 50}
+  - {id: us_nfp, name_en: "US nonfarm payrolls", name_ar: "الوظائف الأمريكية خارج الزراعة", domain: global, frequency: monthly, unit: thousands, source: fred_csv, endpoint: PAYEMS, access: FREE_FILE, stale_after_days: 50}
+  - {id: us_unemp, name_en: "US unemployment rate", name_ar: "البطالة الأمريكية", domain: global, frequency: monthly, unit: "%", source: fred_csv, endpoint: UNRATE, access: FREE_FILE, stale_after_days: 50}
+  - {id: us10y, name_en: "US 10-year Treasury yield", name_ar: "عائد السندات الأمريكية لعشر سنين", domain: global, frequency: daily, unit: "%", source: fred_csv, endpoint: DGS10, access: FREE_FILE, calendar: global, stale_after_days: 6}
+  - {id: us2y, name_en: "US 2-year Treasury yield", name_ar: "عائد السندات الأمريكية لسنتين", domain: global, frequency: daily, unit: "%", source: fred_csv, endpoint: DGS2, access: FREE_FILE, calendar: global, stale_after_days: 6}
+  - {id: breakeven10y, name_en: "US 10-year breakeven inflation", name_ar: "توقعات التضخم الأمريكي لعشر سنين", domain: global, frequency: daily, unit: "%", source: fred_csv, endpoint: T10YIE, access: FREE_FILE, calendar: global, stale_after_days: 6}
+  - {id: usd_broad, name_en: "Broad trade-weighted dollar index", name_ar: "مؤشر الدولار الواسع", domain: global, frequency: daily, unit: index, source: fred_csv, endpoint: DTWEXBGS, access: FREE_FILE, calendar: global, stale_after_days: 10}
+  - {id: dxy, name_en: "ICE dollar index DXY (Yahoo)", name_ar: "مؤشر الدولار", domain: global, frequency: daily, unit: index, source: yahoo_markets, endpoint: "DX-Y.NYB", access: FREE_API, calendar: global}
+  - {id: vix, name_en: "VIX volatility index", name_ar: "مؤشر الخوف في الأسواق", domain: global, frequency: daily, unit: index, source: fred_csv, endpoint: VIXCLS, access: FREE_FILE, calendar: global, stale_after_days: 6}
+  - {id: em_spread_proxy, name_en: "ICE BofA EM corporate OAS (EMBI proxy)", name_ar: "علاوة مخاطر ديون الأسواق الناشئة", domain: global, frequency: daily, unit: "%", source: fred_csv, endpoint: BAMLEMCBPIOAS, access: FREE_FILE, calendar: global, stale_after_days: 6, definition_note: "corporate spread, used only as a proxy for EMBI"}
+  - {id: msci_em_proxy, name_en: "EM equities proxy (EEM ETF)", name_ar: "مؤشر أسهم الأسواق الناشئة", domain: global, frequency: daily, unit: USD, source: yahoo_markets, endpoint: EEM, access: FREE_API, calendar: global, definition_note: "ETF price, not the MSCI index level"}
+  - {id: eurusd, name_en: "EUR/USD", name_ar: "سعر اليورو مقابل الدولار", domain: global, frequency: daily, unit: USD per EUR, source: fred_csv, endpoint: DEXUSEU, access: FREE_FILE, calendar: global, stale_after_days: 10}
+  - {id: euro_area_hicp, name_en: "Euro-area HICP inflation (y/y)", name_ar: "التضخم في منطقة اليورو", domain: global, frequency: monthly, unit: "%", source: eurostat_hicp, endpoint: "prc_hicp_minr RCH_A TOTAL EA", access: FREE_API, stale_after_days: 45, definition_note: "Eurostat COICOP-2018 dataset (the old prc_hicp_manr and ECB ICP keys stopped at Dec 2025)"}
+  - {id: euro_area_pmi, name_en: "Euro-area composite PMI", name_ar: "مؤشر مديري المشتريات لمنطقة اليورو", domain: global, frequency: monthly, unit: index, source: manual, access: MANUAL}
+
+  # ---------------------------------------------------------------- 3.10 Geopolitical
+  - {id: gpr_global, name_en: "Geopolitical Risk index (monthly)", name_ar: "مؤشر المخاطر الجيوسياسية (شهري)", domain: geopolitical, frequency: monthly, unit: index, source: gpr_monthly, endpoint: GPR, access: FREE_FILE, stale_after_days: 40}
+  - {id: gpr_threats, name_en: "GPR threats sub-index (monthly)", name_ar: "مؤشر التهديدات", domain: geopolitical, frequency: monthly, unit: index, source: gpr_monthly, endpoint: GPRT, access: FREE_FILE, stale_after_days: 40}
+  - {id: gpr_acts, name_en: "GPR acts sub-index (monthly)", name_ar: "مؤشر الأحداث الفعلية", domain: geopolitical, frequency: monthly, unit: index, source: gpr_monthly, endpoint: GPRA, access: FREE_FILE, stale_after_days: 40}
+  - {id: gpr_egypt, name_en: "Country GPR — Egypt", name_ar: "مؤشر المخاطر الجيوسياسية لمصر", domain: geopolitical, frequency: monthly, unit: index, source: gpr_monthly, endpoint: GPRC_EGY, access: FREE_FILE, stale_after_days: 40}
+  - {id: gpr_israel, name_en: "Country GPR — Israel", name_ar: "مؤشر المخاطر الجيوسياسية لإسرائيل", domain: geopolitical, frequency: monthly, unit: index, source: gpr_monthly, endpoint: GPRC_ISR, access: FREE_FILE, stale_after_days: 40}
+  - {id: gpr_saudi, name_en: "Country GPR — Saudi Arabia", name_ar: "مؤشر المخاطر الجيوسياسية للسعودية", domain: geopolitical, frequency: monthly, unit: index, source: gpr_monthly, endpoint: GPRC_SAU, access: FREE_FILE, stale_after_days: 40}
+  - {id: gpr_daily, name_en: "Geopolitical Risk index (daily)", name_ar: "مؤشر المخاطر الجيوسياسية (يومي)", domain: geopolitical, frequency: daily, unit: index, source: gpr_daily, endpoint: GPRD, access: FREE_FILE, calendar: all, stale_after_days: 12, definition_note: "file updated every Monday"}
+  - {id: gpr_daily_acts, name_en: "GPR daily — acts", name_ar: "مؤشر الأحداث اليومي", domain: geopolitical, frequency: daily, unit: index, source: gpr_daily, endpoint: GPRD_ACT, access: FREE_FILE, calendar: all, stale_after_days: 12}
+  - {id: gpr_daily_threats, name_en: "GPR daily — threats", name_ar: "مؤشر التهديدات اليومي", domain: geopolitical, frequency: daily, unit: index, source: gpr_daily, endpoint: GPRD_THREAT, access: FREE_FILE, calendar: all, stale_after_days: 12}
+  - {id: gdelt_egypt_economy_tone, name_en: "GDELT tone — Egypt economy", name_ar: "نبرة الأخبار عن اقتصاد مصر", domain: geopolitical, frequency: daily, unit: tone, source: gdelt_doc, endpoint: "egypt economy", access: FREE_API, calendar: all, definition_note: "GDELT DOC 2.0 timeline; HTTP 429 rate limits are intermittent — a failed day stays empty"}
+  - {id: gdelt_egypt_economy_vol, name_en: "GDELT volume — Egypt economy", name_ar: "حجم الأخبار عن اقتصاد مصر", domain: geopolitical, frequency: daily, unit: "% of articles", source: gdelt_doc, endpoint: "egypt economy", access: FREE_API, calendar: all}
+  - {id: gdelt_egyptian_pound_tone, name_en: "GDELT tone — Egyptian pound", name_ar: "نبرة الأخبار عن الجنيه", domain: geopolitical, frequency: daily, unit: tone, source: gdelt_doc, endpoint: "egyptian pound", access: FREE_API, calendar: all}
+  - {id: gdelt_suez_canal_tone, name_en: "GDELT tone — Suez Canal", name_ar: "نبرة الأخبار عن قناة السويس", domain: geopolitical, frequency: daily, unit: tone, source: gdelt_doc, endpoint: "suez canal", access: FREE_API, calendar: all}
+  - {id: gdelt_red_sea_tone, name_en: "GDELT tone — Red Sea shipping", name_ar: "نبرة الأخبار عن الملاحة في البحر الأحمر", domain: geopolitical, frequency: daily, unit: tone, source: gdelt_doc, endpoint: "red sea shipping", access: FREE_API, calendar: all}
+  - {id: gdelt_hormuz_tone, name_en: "GDELT tone — Strait of Hormuz", name_ar: "نبرة الأخبار عن مضيق هرمز", domain: geopolitical, frequency: daily, unit: tone, source: gdelt_doc, endpoint: "strait of hormuz", access: FREE_API, calendar: all}
+  - {id: gdelt_iran_war_tone, name_en: "GDELT tone — Iran war", name_ar: "نبرة الأخبار عن حرب إيران", domain: geopolitical, frequency: daily, unit: tone, source: gdelt_doc, endpoint: "iran war", access: FREE_API, calendar: all}
+  - {id: gdelt_gaza_tone, name_en: "GDELT tone — Gaza", name_ar: "نبرة الأخبار عن غزة", domain: geopolitical, frequency: daily, unit: tone, source: gdelt_doc, endpoint: "gaza", access: FREE_API, calendar: all}
+  - {id: acled_counts, name_en: "ACLED conflict events (region)", name_ar: "عدد أحداث النزاع في المنطقة", domain: geopolitical, frequency: weekly, unit: events, source: acled, access: MANUAL, definition_note: "ACLED Open tier has no API"}
+
+  # ---------------------------------------------------------------- 3.11 Healthcare
+  - {id: cpi_health_yoy, name_en: "CPI health (nationwide, y/y)", name_ar: "تضخم بند الصحة", domain: healthcare, frequency: monthly, unit: "%", source: capmas, access: MANUAL}
+  - {id: cpi_med_products_yoy, name_en: "CPI medical products & appliances (y/y)", name_ar: "تضخم الأدوية والمستلزمات الطبية", domain: healthcare, frequency: monthly, unit: "%", source: capmas, access: MANUAL}
+  - {id: drug_shortages, name_en: "Official drug shortage share", name_ar: "نسبة نواقص الأدوية", domain: healthcare, frequency: event, unit: "% of market", source: manual, access: MANUAL}
+  - {id: pharma_market, name_en: "Pharma market sales growth", name_ar: "نمو مبيعات سوق الدواء", domain: healthcare, frequency: quarterly, unit: "%", source: manual, access: MANUAL}
+
+  # ---------------------------------------------------------------- DERIVED (SPEC §5, pulse/derive.py)
+  - {id: real_headline, name_en: "Real policy rate (ODR − urban CPI y/y)", name_ar: "الفايدة الحقيقية مقابل التضخم العام", domain: monetary, frequency: monthly, unit: pp, source: derived, access: DERIVED}
+  - {id: real_core, name_en: "Real policy rate (ODR − core CPI y/y)", name_ar: "الفايدة الحقيقية مقابل التضخم الأساسي", domain: monetary, frequency: monthly, unit: pp, source: derived, access: DERIVED}
+  - {id: real_expected, name_en: "Real policy rate (ODR − CBE expected inflation)", name_ar: "الفايدة الحقيقية مقابل التضخم المتوقع", domain: monetary, frequency: monthly, unit: pp, source: derived, access: DERIVED}
+  - {id: real_ceiling, name_en: "Real corridor ceiling (OLR − urban CPI y/y)", name_ar: "سقف الممر الحقيقي", domain: monetary, frequency: monthly, unit: pp, source: derived, access: DERIVED}
+  - {id: fx_gold_implied, name_en: "Gold-implied USD/EGP (21K)", name_ar: "سعر الدولار المحسوب من الدهب", domain: fx, frequency: daily, unit: EGP per USD, source: derived, access: DERIVED, calendar: all}
+  - {id: gold_gap_pct, name_en: "Gold-implied vs official FX gap", name_ar: "الفرق بين دولار الدهب والدولار الرسمي", domain: fx, frequency: daily, unit: "%", source: derived, access: DERIVED, calendar: all}
+  - {id: gold_local_premium_egp, name_en: "Local 21K premium vs global (per gram)", name_ar: "علاوة الدهب المحلي للجرام", domain: gold, frequency: daily, unit: EGP/gram, source: derived, access: DERIVED, calendar: all}
+  - {id: gold_local_premium_pct, name_en: "Local 21K premium vs global (%)", name_ar: "نسبة علاوة الدهب المحلي", domain: gold, frequency: daily, unit: "%", source: derived, access: DERIVED, calendar: all}
+  - {id: fx_market_gap_pct, name_en: "Market (Yahoo) vs CBE official gap", name_ar: "الفرق بين سعر السوق والسعر الرسمي", domain: fx, frequency: daily, unit: "%", source: derived, access: DERIVED, calendar: egypt}
+  - {id: fx_chg_1d, name_en: "USD/EGP 1-day change", name_ar: "تغير الدولار في يوم", domain: fx, frequency: daily, unit: "%", source: derived, access: DERIVED, calendar: egypt}
+  - {id: fx_chg_5d, name_en: "USD/EGP 5-day change", name_ar: "تغير الدولار في 5 أيام", domain: fx, frequency: daily, unit: "%", source: derived, access: DERIVED, calendar: egypt}
+  - {id: fx_chg_20d, name_en: "USD/EGP 20-day change", name_ar: "تغير الدولار في 20 يوم", domain: fx, frequency: daily, unit: "%", source: derived, access: DERIVED, calendar: egypt}
+  - {id: fx_chg_3m, name_en: "USD/EGP 3-month change", name_ar: "تغير الدولار في 3 شهور", domain: fx, frequency: daily, unit: "%", source: derived, access: DERIVED, calendar: egypt}
+  - {id: fx_vol_20d, name_en: "USD/EGP 20-day realized volatility (annualized)", name_ar: "تذبذب الدولار في 20 يوم", domain: fx, frequency: daily, unit: "%", source: derived, access: DERIVED, calendar: egypt}
+  - {id: brent_gap, name_en: "Brent minus budget assumption", name_ar: "فرق برنت عن سعر الموازنة", domain: energy, frequency: daily, unit: USD/bbl, source: derived, access: DERIVED, calendar: global, stale_after_days: 7}
+  - {id: ca_pressure_pct_gdp, name_en: "Oil-driven CA pressure (IMF rule of thumb)", name_ar: "ضغط البترول على الحساب الجاري", domain: energy, frequency: daily, unit: "% GDP", source: derived, access: DERIVED, calendar: global, stale_after_days: 7}
+  - {id: brent_egp, name_en: "Brent in EGP", name_ar: "سعر برنت بالجنيه", domain: energy, frequency: daily, unit: EGP/bbl, source: derived, access: DERIVED, calendar: global, stale_after_days: 7}
+  - {id: brent_egp_qavg_chg, name_en: "Quarter-avg Brent in EGP vs previous quarter", name_ar: "تغير متوسط برنت بالجنيه عن الربع اللي فات", domain: energy, frequency: daily, unit: "%", source: derived, access: DERIVED, calendar: global, stale_after_days: 7}
+  - {id: nir_chg_3m, name_en: "NIR 3-month change", name_ar: "تغير الاحتياطي في 3 شهور", domain: monetary, frequency: monthly, unit: USD mn, source: derived, access: DERIVED, stale_after_days: 45}
+  - {id: remittances_12m_sum, name_en: "Remittances, rolling 12-month sum", name_ar: "التحويلات في آخر 12 شهر", domain: external, frequency: monthly, unit: USD bn, source: derived, access: DERIVED, stale_after_days: 80}
+  - {id: nir_months_imports, name_en: "NIR in months of imports", name_ar: "الاحتياطي يغطي كام شهر واردات", domain: external, frequency: monthly, unit: months, source: derived, access: DERIVED, stale_after_days: 45, definition_note: "imports = latest FY oil + non-oil merchandise imports (BoP)"}
+  - {id: debt_service_next_year_to_nir, name_en: "Next calendar year's scheduled debt service / NIR", name_ar: "خدمة دين السنة الجاية إلى الاحتياطي", domain: fiscal, frequency: monthly, unit: "%", source: derived, access: DERIVED, stale_after_days: 45}
+  - {id: suez_ratio_7dma, name_en: "Suez transits 7-day avg vs 2023 baseline", name_ar: "حركة قناة السويس مقارنة بسنة 2023", domain: external, frequency: daily, unit: ratio, source: derived, access: DERIVED, calendar: all, stale_after_days: 12}
+  - {id: babelmandeb_ratio_7dma, name_en: "Bab el-Mandeb 7-day avg vs 2023 baseline", name_ar: "حركة باب المندب مقارنة بسنة 2023", domain: external, frequency: daily, unit: ratio, source: derived, access: DERIVED, calendar: all, stale_after_days: 12}
+  - {id: hormuz_ratio_7dma, name_en: "Hormuz transits 7-day avg vs 2023 baseline", name_ar: "حركة مضيق هرمز مقارنة بسنة 2023", domain: external, frequency: daily, unit: ratio, source: derived, access: DERIVED, calendar: all, stale_after_days: 12}
+  - {id: pmi_3m_avg, name_en: "PMI 3-month average", name_ar: "متوسط مؤشر المشتريات في 3 شهور", domain: real, frequency: monthly, unit: index, source: derived, access: DERIVED, stale_after_days: 40}
+  - {id: pmi_implied_gdp, name_en: "PMI-implied GDP growth (PMI×0.269−8.62)", name_ar: "النمو المستنتج من مؤشر المشتريات", domain: real, frequency: monthly, unit: "%", source: derived, access: DERIVED, stale_after_days: 40}
+  - {id: us_cpi_yoy, name_en: "US CPI y/y", name_ar: "التضخم الأمريكي السنوي", domain: global, frequency: monthly, unit: "%", source: derived, access: DERIVED, stale_after_days: 50}
+  - {id: us_core_cpi_yoy, name_en: "US core CPI y/y", name_ar: "التضخم الأساسي الأمريكي", domain: global, frequency: monthly, unit: "%", source: derived, access: DERIVED, stale_after_days: 50}
+  - {id: carry_ex_ante, name_en: "Carry, ex-ante (1y T-bill − gold-gap expected depreciation)", name_ar: "عائد المراجحة المتوقع", domain: fx, frequency: daily, unit: "%", source: derived, access: DERIVED, calendar: all}
+  - {id: carry_ex_post_3m, name_en: "Carry, ex-post 3 months (3m T-bill/4 − FX change)", name_ar: "عائد المراجحة المحقق في 3 شهور", domain: fx, frequency: daily, unit: "%", source: derived, access: DERIVED, calendar: egypt}
+  - {id: eda_signal, name_en: "EDA Decision 480 repricing signal (6-month window)", name_ar: "مؤشر إعادة تسعير الدواء", domain: healthcare, frequency: monthly, unit: "%", source: derived, access: DERIVED, stale_after_days: 45, definition_note: "my reconstruction of Decision 480 as reported in press; verify against Gazette text"}

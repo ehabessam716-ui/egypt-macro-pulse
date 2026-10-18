@@ -1,0 +1,310 @@
+# Egypt Macro Pulse — source registry (Phase 0 verified 2026-10-18)
+# check kinds (scripts/verify_sources.py):
+#   http, rss, fred_csv, yfinance, gpr_excel, gdelt, portwatch, json, cbe_api, manual, paid
+# access: FREE_API / FREE_FILE / SCRAPE / MANUAL / PAID
+# ua: browser -> the site's firewall rejects non-browser User-Agents (robots.txt allows the path);
+#                we send a standard browser UA at >= 2 s spacing.
+# policy: autonomous build rules — free, keyless, public only. Anything blocked, paid, login-only or
+#         failing 3 retries is MANUAL (reason in `manual_reason`, details in reports/phase0_source_audit.md).
+
+sources:
+  # ---------------- Egypt FX & markets ----------------
+  - id: cbe_fx_rates
+    name: CBE official exchange rates (+ historical-data API)
+    url: https://www.cbe.org.eg/en/economic-research/statistics/exchange-rates
+    kind: http
+    ua: browser
+    access: SCRAPE
+    robots: true
+    series: [fx_cbe_official, fx_cbe_official_sell]
+  - id: nbe_fx
+    name: National Bank of Egypt exchange rates (fallback)
+    url: https://www.nbe.com.eg/NBE/E/#/EN/ExchangeRatesAndCurrencyConverter
+    kind: manual
+    access: MANUAL
+    manual_reason: "JS-only single-page app; CBE page works so no fallback scraper is needed"
+  - id: yahoo_markets
+    name: Yahoo Finance market proxies (unofficial)
+    url: https://finance.yahoo.com
+    kind: yfinance
+    access: FREE_API
+    tickers: ["EGP=X", "BZ=F", "CL=F", "GC=F", "SI=F", "ZW=F", "TTF=F", "DX-Y.NYB", "EEM"]
+    series: [fx_market, brent_fut, wti_fut, xauusd, xagusd, wheat, ttf_fut, dxy, msci_em_proxy]
+  - id: egx
+    name: Egyptian Exchange (foreign net flows bulletin)
+    url: https://www.egx.com.eg/en/homepage.aspx
+    kind: manual
+    access: MANUAL
+    manual_reason: "connection reset for scripted clients in Phase 0; bulletin is an ASP.NET postback page — MANUAL"
+    series: [egx_foreign_net]
+  - id: fx_parallel
+    name: Parallel-market USD/EGP
+    kind: manual
+    access: MANUAL
+    manual_reason: "no official or free programmatic source"
+    series: [fx_parallel]
+  - id: eurobonds
+    name: Egypt USD Eurobond yields
+    kind: manual
+    access: MANUAL
+    manual_reason: "no free licensed feed; enter from press"
+    series: [eurobond_yield]
+  - id: cds
+    name: Egypt 5Y CDS
+    kind: paid
+    access: PAID
+    manual_reason: "Bloomberg/Refinitiv only; MANUAL weekly from press"
+    series: [cds_5y]
+
+  # ---------------- CBE monetary / external ----------------
+  - id: cbe_home
+    name: CBE homepage (key rates, CONIA)
+    url: https://www.cbe.org.eg/en
+    kind: http
+    ua: browser
+    access: SCRAPE
+    robots: true
+    series: [interbank_overnight]
+  - id: cbe_mpc
+    name: CBE key rates / MPC schedule page
+    url: https://www.cbe.org.eg/en/monetary-policy/mpc-meetings-schedule
+    kind: http
+    ua: browser
+    access: SCRAPE
+    robots: true
+    expect_text: "Overnight Deposit Rate"
+    series: [cbe_odr, cbe_olr, cbe_mainop, cbe_discount]
+  - id: cbe_cpi
+    name: CBE inflation rates page (headline/core m/m, y/y)
+    url: https://www.cbe.org.eg/en/economic-research/statistics/inflation-rates
+    kind: http
+    ua: browser
+    access: SCRAPE
+    robots: true
+    expect_text: "Inflation for Last Month"
+    series: [cpi_urban_yoy, cpi_urban_mom, cpi_core_yoy, cpi_core_mom, cpi_regulated_yoy, cpi_regulated_mom, cpi_fv_yoy, cpi_fv_mom]
+  - id: cbe_news
+    name: CBE news listing JSON (NIR, remittances, MPC, CPI, BoP releases)
+    url: https://www.cbe.org.eg/api/listing/News?pageNo=0&pageSize=10&datasourceItemId=%7BDE996AEC-03FB-4E24-BDB0-EF64F75FD5AD%7D
+    kind: cbe_api
+    ua: browser
+    access: SCRAPE
+    series: [nir, remittances, remittances_yoy, remittances_ytd, cbe_mpc_decision, cbe_mpc_tone, gdp_growth, gdp_growth_fy]
+  - id: cbe_bop
+    name: CBE balance-of-payments press-release PDFs
+    url: https://www.cbe.org.eg/en/news-publications/news
+    kind: http
+    ua: browser
+    access: SCRAPE
+    series: [bop_ca_fy, bop_overall_fy, remittances_fy, tourism_receipts_fy, suez_receipts_fy, fdi_net_fy, portfolio_net_fy]
+  - id: cbe_auctions
+    name: CBE T-bill auctions (+ historical-data API)
+    url: https://www.cbe.org.eg/en/auctions/egp-t-bills
+    kind: http
+    ua: browser
+    access: SCRAPE
+    robots: true
+    expect_text: "Weighted Avg. Yield"
+    series: [tbill_3m_yield, tbill_6m_yield, tbill_9m_yield, tbill_12m_yield]
+
+  # ---------------- CAPMAS / MoF / official Egypt ----------------
+  - id: capmas
+    name: CAPMAS (CPI detail, trade, labour)
+    url: https://www.capmas.gov.eg/
+    kind: manual
+    access: MANUAL
+    manual_reason: "JS-only app ('You need to enable JavaScript'); headline/core CPI come from CBE instead"
+    series: [cpi_national_yoy, cpi_food_yoy, cpi_health_yoy, cpi_med_products_yoy, unemployment]
+  - id: mof
+    name: Ministry of Finance (financial monthly, debt)
+    url: https://mof.gov.eg/en
+    kind: manual
+    access: MANUAL
+    manual_reason: "JS-only app; no data in HTML"
+    series: [budget_balance, primary_balance]
+  - id: sp_pmi
+    name: S&P Global PMI press releases (Egypt, Saudi, UAE headline)
+    url: https://www.pmi.spglobal.com/Public/Release/PressReleases
+    kind: http
+    access: SCRAPE
+    robots: true
+    expect_text: "Egypt PMI"
+    series: [pmi, saudi_pmi, uae_pmi]
+
+  # ---------------- Shipping / geopolitics ----------------
+  - id: portwatch_chokepoints
+    name: IMF PortWatch Daily Chokepoints Data
+    url: https://portwatch.imf.org/datasets/imf-dataviz::daily-chokepoints-data
+    kind: portwatch
+    access: FREE_API
+    expect_ids: {suez: chokepoint1, babelmandeb: chokepoint4, hormuz: chokepoint6}
+    expect_names: ["Suez Canal", "Bab el-Mandeb Strait", "Strait of Hormuz"]
+    series: [suez_transits, babelmandeb_transits, hormuz_transits]
+  - id: gpr_monthly
+    name: Caldara–Iacoviello GPR monthly (incl. country indexes)
+    url: https://www.matteoiacoviello.com/gpr_files/data_gpr_export.xls
+    kind: gpr_excel
+    access: FREE_FILE
+    license: "CC BY — Caldara, Dario and Matteo Iacoviello (2022), Measuring Geopolitical Risk, AER"
+    required_columns: [GPR, GPRT, GPRA, GPRC_EGY]
+    optional_columns: [GPRC_ISR, GPRC_SAU]
+    series: [gpr_global, gpr_threats, gpr_acts, gpr_egypt, gpr_israel, gpr_saudi]
+  - id: gpr_daily
+    name: Caldara–Iacoviello GPR daily (recent)
+    url: https://www.matteoiacoviello.com/gpr_files/data_gpr_daily_recent.xls
+    kind: gpr_excel
+    access: FREE_FILE
+    required_columns: [GPRD]
+    optional_columns: [GPRD_ACT, GPRD_THREAT]
+    series: [gpr_daily, gpr_daily_acts, gpr_daily_threats]
+  - id: gdelt_doc
+    name: GDELT DOC 2.0 API
+    url: https://api.gdeltproject.org/api/v2/doc/doc?query=egypt%20economy&mode=timelinetone&format=json&timespan=1w
+    kind: gdelt
+    access: FREE_API
+    notes: "Intermittent HTTP 429 rate limits (failed 3 probes at 17:25–17:40, worked at 17:50 on 2026-10-18). Collector keeps >=6 s between calls and stops GDELT for the run after 3 failed retries."
+    series: [gdelt_egypt_economy_tone, gdelt_egypt_economy_vol]
+  - id: acled
+    name: ACLED conflict events
+    url: https://acleddata.com/
+    kind: manual
+    access: MANUAL
+    manual_reason: "Open tier (personal email) has no API; account creation not allowed by policy"
+    series: [acled_counts]
+
+  # ---------------- Global / US ----------------
+  - id: fred_csv
+    name: FRED (keyless graph CSV)
+    url: https://fred.stlouisfed.org/graph/fredgraph.csv
+    kind: fred_csv
+    access: FREE_FILE
+    series_ids: [DFF, FEDFUNDS, DGS10, DGS2, T10YIE, CPIAUCSL, CPILFESL, PAYEMS, UNRATE, VIXCLS,
+                 DTWEXBGS, DEXUSEU, DCOILBRENTEU, DCOILWTICO, DHHNGSP, PNGASEUUSDM, PWHEAMTUSDM, BAMLEMCBPIOAS]
+  - id: fred_api
+    name: FRED REST API
+    url: https://api.stlouisfed.org/fred/series
+    kind: manual
+    access: MANUAL
+    manual_reason: "needs an API key (account) — not used; keyless fredgraph CSV covers every series"
+  - id: eia_api
+    name: EIA Open Data API v2
+    url: https://api.eia.gov/v2/
+    kind: manual
+    access: MANUAL
+    manual_reason: "needs an API key — skipped by policy; Brent/WTI come from FRED (EIA data) with Yahoo futures fallback"
+    series: [eia_steo_brent]
+  - id: fomc_calendar
+    name: Fed FOMC calendar
+    url: https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm
+    kind: http
+    access: SCRAPE
+    expect_text: "2026 FOMC Meetings"
+  - id: worldbank_api
+    name: World Bank API (Egypt GDP growth)
+    url: https://api.worldbank.org/v2/country/EGY/indicator/NY.GDP.MKTP.KD.ZG?format=json&per_page=5
+    kind: json
+    access: FREE_API
+    series: [wb_gdp_growth]
+  - id: imf_datamapper
+    name: IMF DataMapper API (WEO Egypt)
+    url: https://www.imf.org/external/datamapper/api/v1/NGDP_RPCH/EGY
+    kind: json
+    access: FREE_API
+    series: [imf_weo_gdp, imf_weo_cpi, imf_weo_ca, imf_weo_debt]
+  - id: ecb_hicp
+    name: ECB Data Portal (euro-area HICP y/y, old key)
+    url: https://data-api.ecb.europa.eu/service/data/ICP/M.U2.N.000000.4.ANR?lastNObservations=1&format=jsondata
+    kind: json
+    access: MANUAL
+    stale_after_days: 75
+    manual_reason: "series key frozen at 2025-12 (COICOP-2018 switch); replaced by Eurostat prc_hicp_minr"
+  - id: eurostat_hicp
+    name: Eurostat API (euro-area HICP y/y, COICOP 2018)
+    url: https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/prc_hicp_minr?geo=EA&coicop18=TOTAL&unit=RCH_A&lastTimePeriod=1
+    kind: json
+    access: FREE_API
+    stale_after_days: 75
+    series: [euro_area_hicp]
+
+  # ---------------- Gold (Egypt local) ----------------
+  - id: gold_banklive
+    name: banklive.net gold price in Egypt
+    url: https://banklive.net/en/gold-price-today-in-egypt
+    kind: http
+    access: SCRAPE
+    robots: true
+    series: [gold_eg_21k, gold_eg_24k, gold_eg_pound, xauusd_spot]
+  - id: gold_isagha
+    name: iSagha gold prices (fallback, 24K only)
+    url: https://market.isagha.com/prices
+    kind: http
+    access: SCRAPE
+    robots: true
+    series: [gold_eg_24k]
+  - id: gold_goldpricez
+    name: goldpricez Egypt gram price
+    url: https://goldpricez.com/eg/gram
+    kind: manual
+    access: MANUAL
+    manual_reason: "prices rendered by JavaScript; banklive + iSagha are enough"
+
+  # ---------------- News RSS (independent outlets for event corroboration) ----------------
+  - id: rss_dne
+    name: Daily News Egypt RSS
+    outlet: Daily News Egypt
+    url: https://www.dailynewsegypt.com/feed/
+    kind: rss
+    access: FREE_API
+    series: [news_rss]
+  - id: rss_egypt_independent
+    name: Egypt Independent RSS
+    outlet: Egypt Independent
+    url: https://www.egyptindependent.com/feed/
+    kind: rss
+    access: FREE_API
+    series: [news_rss]
+  - id: rss_mada
+    name: Mada Masr RSS
+    outlet: Mada Masr
+    url: https://www.madamasr.com/en/feed/
+    kind: rss
+    access: FREE_API
+    series: [news_rss]
+  - id: rss_enterprise
+    name: EnterpriseAM Egypt RSS
+    outlet: EnterpriseAM
+    url: https://enterpriseam.com/egypt/feed/
+    kind: rss
+    access: FREE_API
+    series: [news_rss]
+  - id: rss_ahram
+    name: Ahram Online RSS (business)
+    url: https://english.ahram.org.eg/UI/Front/RSS.aspx?CatID=3
+    kind: manual
+    access: MANUAL
+    manual_reason: "feed URL returns 404 (also tried /rss/3.aspx, /rss.aspx); no RSS link on the homepage"
+  - id: rss_imf
+    name: IMF news RSS
+    url: https://www.imf.org/en/News/RSS?Language=ENG
+    kind: manual
+    access: MANUAL
+    manual_reason: "HTTP 403 Access Denied (Akamai) for scripted clients"
+  - id: rss_arabfinance
+    name: Arab Finance RSS
+    url: https://www.arabfinance.com/en/rss
+    kind: manual
+    access: MANUAL
+    manual_reason: "HTTP 410 Gone"
+
+  # ---------------- Always MANUAL / PAID ----------------
+  - id: manual_events
+    name: Ratings, IMF, fuel committee, EDA, Gulf deals, LNG, load-shedding, Suez revenue, tourism
+    kind: manual
+    access: MANUAL
+    manual_reason: "event-type facts; seeded from the spec, then auto-candidates from RSS (2-outlet rule)"
+  - id: paid_block
+    name: EMBI, MSCI EM index, consensus, Kpler, full PMI sub-indices
+    kind: paid
+    access: PAID
+    manual_reason: "paid terminals/licences; free proxies used (BAMLEMCBPIOAS, EEM, PMI headline)"
+    series: [consensus]

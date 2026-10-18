@@ -1,0 +1,115 @@
+# Egypt Macro Pulse — collect on GitHub's servers and publish the app to GitHub Pages.
+# The SQLite database is kept as an asset of the "state" release (not in git history).
+# Cron is UTC. Cairo is UTC+3 until 29 Oct 2026 and UTC+2 after, so runs land ~09:45/18:45 (summer) or 08:45/17:45 (winter).
+name: Pulse
+
+on:
+  schedule:
+    - cron: "45 6 * * 0-4"    # daily (Sun–Thu morning)
+    - cron: "45 15 * * 0-4"   # daily (Sun–Thu evening)
+    - cron: "45 20 * * 1-5"   # global (after US close)
+    - cron: "0 17 * * 4"      # weekly deep-dive (Thursday)
+    - cron: "0 9 * * 1"       # GPR (Monday)
+    - cron: "0 9 2 * *"       # GPR monthly file
+  workflow_dispatch:
+    inputs:
+      job:
+        description: "Job to run"
+        default: daily
+        type: choice
+        options: [daily, global, weekly, gpr, calendar, all, analyse]
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pulse
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PYTHONIOENCODING: utf-8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: requirements-ci.txt
+
+      - name: Install
+        run: |
+          pip install -r requirements-ci.txt
+          pip install -e .
+
+      - name: Pick job
+        id: job
+        run: |
+          case "${{ github.event_name }}:${{ github.event.schedule }}" in
+            "schedule:45 6 * * 0-4"|"schedule:45 15 * * 0-4") J=daily ;;
+            "schedule:45 20 * * 1-5") J=global ;;
+            "schedule:0 17 * * 4") J=weekly ;;
+            "schedule:0 9 * * 1"|"schedule:0 9 2 * *") J=gpr ;;
+            workflow_dispatch:*) J="${{ inputs.job }}" ;;
+            *) J=analyse ;;
+          esac
+          echo "job=$J" >> "$GITHUB_OUTPUT"
+          echo "Running job: $J"
+
+      - name: Restore database
+        run: |
+          mkdir -p data
+          gh release download state --pattern pulse.db --dir data --clobber || echo "No saved database yet — starting fresh (first run backfills history)."
+
+      - name: Run
+        run: |
+          if [ "${{ steps.job.outputs.job }}" = "analyse" ]; then
+            python -m pulse.cli init && python -m pulse.cli analyse
+          else
+            python -m pulse.cli run --job "${{ steps.job.outputs.job }}"
+          fi
+
+      - name: Health check
+        run: python -m pulse.cli doctor || true
+
+      - name: Save database
+        if: steps.job.outputs.job != 'analyse'
+        run: |
+          gh release view state >/dev/null 2>&1 || gh release create state --title "Pulse state (database)" --notes "SQLite database used by the scheduled runs. Updated automatically." --latest=false
+          gh release upload state data/pulse.db --clobber
+
+      - name: Keep the schedule alive
+        if: github.event_name == 'schedule'
+        run: |
+          # GitHub pauses schedules in repos with no commits for 60 days: commit a tiny status file every ~30 days.
+          last=$(git log -1 --format=%ct); now=$(date +%s)
+          if [ $(( (now - last) / 86400 )) -ge 30 ]; then
+            mkdir -p status && date -u +"%Y-%m-%dT%H:%M:%SZ" > status/last_keepalive.txt
+            git config user.name "pulse-bot" && git config user.email "pulse-bot@users.noreply.github.com"
+            git add status && git commit -m "keepalive [skip ci]" && git push
+          fi
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: run
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
