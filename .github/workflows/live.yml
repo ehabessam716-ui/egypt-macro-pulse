@@ -11,10 +11,11 @@ permissions:
   contents: read
   pages: write
   id-token: write
+  actions: write   # lets the run start the next one (self-sustaining chain)
 
 concurrency:
   group: pulse-live
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   live:
@@ -54,3 +55,23 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  # GitHub's cron for frequent schedules is unreliable on new repos, so each run starts the next one ~15 minutes
+  # later (workflow_dispatch from GITHUB_TOKEN is allowed). If another live run is already queued or running,
+  # this run does not chain, so there is only ever one chain. Cron + the main workflow restart it if it stops.
+  next:
+    needs: deploy
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Wait, then start the next live refresh
+        run: |
+          sleep 780
+          others=$(gh run list -R "$GITHUB_REPOSITORY" --workflow live.yml --json databaseId,status                    --jq "[.[] | select((.status==\"queued\" or .status==\"in_progress\" or .status==\"waiting\" or .status==\"pending\") and .databaseId != ${{ github.run_id }})] | length")
+          if [ "$others" -gt 0 ]; then echo "another live run is active ($others) — not chaining"; exit 0; fi
+          gh workflow run live.yml -R "$GITHUB_REPOSITORY"
+          echo "next live refresh started"
+

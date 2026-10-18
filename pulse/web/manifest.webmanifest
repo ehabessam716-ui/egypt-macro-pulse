@@ -1,0 +1,19 @@
+{
+  "name": "Pulse · نبض — Egypt Macro",
+  "short_name": "Pulse نبض",
+  "description": "What moves the Egyptian pound — live, explained simply. Learning tool, not financial advice.",
+  "start_url": "./index.html?source=app",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0e3b43",
+  "theme_color": "#0e3b43",
+  "lang": "en",
+  "dir": "auto",
+  "categories": ["finance", "education", "news"],
+  "icons": [
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png"},
+    {"src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}

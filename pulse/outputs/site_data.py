@@ -333,6 +333,39 @@ def _audit(conn) -> dict | None:
         return None
 
 
+def forced_phone_css(css: str, max_px: int = 1100) -> str:
+    """Copy the rules of every `@media (max-width: N)` block under html[data-view="mobile"], so the reader can force
+    the phone layout on a computer. Real phones get the same rules from the media queries themselves."""
+    import re as _re
+    out, i = [], 0
+    pat = _re.compile(r"@media\s*\(max-width:\s*(\d+)px\)\s*\{")
+    while True:
+        m = pat.search(css, i)
+        if not m:
+            break
+        depth, j = 1, m.end()
+        while depth and j < len(css):
+            depth += {"{": 1, "}": -1}.get(css[j], 0)
+            j += 1
+        body = css[m.end(): j - 1]
+        if int(m.group(1)) <= max_px:
+            for sel, decl in _re.findall(r"([^{}]+)\{([^{}]*)\}", body):
+                sels = []
+                for one in sel.split(","):
+                    one = one.strip()
+                    if not one:
+                        continue
+                    if one.startswith("html"):
+                        sels.append('html[data-view="mobile"]' + one[4:])
+                    elif one.startswith(":root"):
+                        sels.append('html[data-view="mobile"]' + one[5:])
+                    else:
+                        sels.append('html[data-view="mobile"] ' + one)
+                out.append(", ".join(sels) + " {" + decl + "}")
+        i = j
+    return "\n/* generated: forced phone layout (from the phone media queries) */\n" + "\n".join(out) + "\n"
+
+
 def _js(callback: str, payload) -> str:
     return f"{callback}({json.dumps(payload, ensure_ascii=False, default=str, separators=(',', ':'))});\n"
 
@@ -345,6 +378,8 @@ def write_site(conn) -> str:
     for f in WEB.iterdir():
         if f.is_file():
             shutil.copy2(f, SITE / f.name)
+    css = (WEB / "styles.css").read_text(encoding="utf-8")
+    (SITE / "styles.css").write_text(css + forced_phone_css(css), encoding="utf-8")
     plotly_js = SITE / "plotly.min.js"
     if not plotly_js.exists():
         from plotly.offline import get_plotlyjs

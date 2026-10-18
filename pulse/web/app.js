@@ -87,6 +87,8 @@
     what_changed: ['What changed today', 'إيه اللي اتغير النهارده'], go_pro: ['Open the full Pro dashboard', 'افتح لوحة المحترفين'],
     big_dollar: ['1 US dollar', 'الدولار الواحد'], big_gold: ['Gold says the dollar is', 'دولار الدهب'], big_oil: ['Oil (Brent)', 'البترول'],
     pounds: ['pounds', 'جنيه'], per_barrel: ['per barrel', 'للبرميل'], tour_title: ['Guided tour', 'جولة سريعة'],
+    layout: ['Layout', 'طريقة العرض'], lay_auto: ['Auto', 'تلقائي'], lay_mobile: ['Phone', 'موبايل'], lay_desktop: ['Desktop', 'كمبيوتر'],
+    lay_hint: ['tap to switch', 'دوس للتغيير'], install: ['Install app', 'نزّل التطبيق'],
     help_ppi: ['Each sub-index compares today with the last 3 years (z-score → −100…+100), adds fired rules and decaying events. Weights: config/indices.yaml.',
       'كل مؤشر فرعي بيقارن النهارده بآخر 3 سنين، وبيضيف الإشارات والأحداث. الأوزان في ملف الإعدادات.'],
   };
@@ -970,12 +972,38 @@
     $('#themeBtn').title = `theme: ${S.theme}`;
     $('#explainBtn').setAttribute('aria-pressed', String(S.explain));
     updateLive();
+    paintViewBtn();
   }
   function setMode(m) {
     S.mode = m === 'pro' ? 'pro' : 'simple'; store('pulse.mode', S.mode);
     S.tour = null; closeDrawer();
     location.hash = '#/' + (S.mode === 'simple' ? 'home' : 'overview');
     render();
+  }
+  function viewState() {
+    const d = document.documentElement;
+    return { pref: d.dataset.viewPref || 'auto', eff: d.dataset.view || 'desktop', phone: d.dataset.device === 'phone' };
+  }
+  function paintViewBtn() {
+    const v = viewState();
+    const icon = v.eff === 'mobile' ? '📱' : '🖥';
+    const label = v.pref === 'auto' ? `${t('lay_auto')} (${t(v.eff === 'mobile' ? 'lay_mobile' : 'lay_desktop')})` : t(v.pref === 'mobile' ? 'lay_mobile' : 'lay_desktop');
+    $('#viewBtn').innerHTML = `<span aria-hidden="true">${icon}</span>${v.pref === 'auto' ? '<small class="auto-badge">A</small>' : ''}`;
+    $('#viewBtn').title = `${t('layout')}: ${label} — ${t('lay_hint')}`;
+    $('#viewBtn').setAttribute('aria-label', `${t('layout')}: ${label}`);
+  }
+  function cycleView() {
+    const order = ['auto', 'mobile', 'desktop'];
+    const v = viewState();
+    const pref = order[(order.indexOf(v.pref) + 1) % order.length];
+    store('pulse.view', pref);
+    const eff = pref === 'auto' ? (v.phone ? 'mobile' : 'desktop') : pref;
+    const d = document.documentElement;
+    d.dataset.viewPref = pref; d.dataset.view = eff;
+    $('#vp').setAttribute('content', eff === 'desktop' && v.phone ? 'width=1280' : 'width=device-width, initial-scale=1, viewport-fit=cover');
+    paintViewBtn(); render(true);
+    toast(`${t('layout')}: ${pref === 'auto' ? t('lay_auto') + ' — ' : ''}${t(eff === 'mobile' ? 'lay_mobile' : 'lay_desktop')}`, '', 2500);
+    setTimeout(drawAllCharts, 60);
   }
   function setLang(l) {
     S.lang = l; store('pulse.lang', l);
@@ -1086,6 +1114,7 @@
     });
     $$('.seg [data-lang]').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));
     $('#themeBtn').addEventListener('click', cycleTheme);
+    $('#viewBtn').addEventListener('click', cycleView);
     $('#explainBtn').addEventListener('click', () => { S.explain = !S.explain; store('pulse.explain', S.explain ? '1' : '0'); render(true); });
     $('#searchBtn').addEventListener('click', openPalette);
     $('#runBtn').addEventListener('click', runNow);
@@ -1120,6 +1149,9 @@
     setInterval(updateLive, 30 * 1000);
     document.addEventListener('visibilitychange', () => { if (!document.hidden) { poll(); pollLive(true); } });
     window.addEventListener('load', () => drawAllCharts());
+  }
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();

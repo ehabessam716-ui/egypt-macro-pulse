@@ -25,6 +25,7 @@ permissions:
   contents: write
   pages: write
   id-token: write
+  actions: write
 
 concurrency:
   group: pulse
@@ -107,6 +108,10 @@ jobs:
             git add status && git commit -m "keepalive [skip ci]" && git push
           fi
 
+      - name: Make sure the 15-minute live chain is running
+        run: |
+          active=$(gh run list -R "$GITHUB_REPOSITORY" --workflow live.yml --json status --jq '[.[] | select(.status!="completed")] | length')
+          if [ "$active" -eq 0 ]; then gh workflow run live.yml -R "$GITHUB_REPOSITORY" && echo "live chain restarted"; else echo "live chain active"; fi
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site

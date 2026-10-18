@@ -2,11 +2,16 @@
 <html lang="en" dir="ltr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta id="vp" name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Pulse · نبض — Egypt Macro</title>
 <meta name="description" content="Egypt Macro Pulse — what moves the Egyptian pound, live. Learning tool, not financial advice.">
 <meta name="theme-color" content="#0E3B43">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Pulse">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
@@ -19,6 +24,15 @@
     if (q.get('theme')) localStorage.setItem('pulse.theme', q.get('theme'));
     if (q.get('mode')) localStorage.setItem('pulse.mode', q.get('mode') === 'pro' ? 'pro' : 'simple');
     if (q.get('explain')) localStorage.setItem('pulse.explain', q.get('explain') === '1' ? '1' : '0');
+    if (q.get('view')) localStorage.setItem('pulse.view', q.get('view'));
+    // layout: auto-detect phone vs computer, unless the reader picked one
+    const pv = localStorage.getItem('pulse.view') || 'auto';
+    const phone = /Android|iPhone|iPod|Mobile/i.test(navigator.userAgent) ||
+      (matchMedia('(pointer: coarse)').matches && Math.min(screen.width, screen.height) < 820);
+    const eff = pv === 'auto' ? (phone ? 'mobile' : 'desktop') : pv;
+    document.documentElement.dataset.view = eff; document.documentElement.dataset.viewPref = pv;
+    document.documentElement.dataset.device = phone ? 'phone' : 'computer';
+    if (eff === 'desktop' && phone) document.getElementById('vp').setAttribute('content', 'width=1280');
     const t = localStorage.getItem('pulse.theme'); if (t && t !== 'auto') document.documentElement.dataset.theme = t;
     const l = localStorage.getItem('pulse.lang'); if (l === 'ar') { document.documentElement.lang = 'ar'; document.documentElement.dir = 'rtl'; }
   } catch (e) {}
@@ -37,6 +51,7 @@
   <div class="top-actions">
     <button class="live" id="live" type="button" aria-live="polite"><span class="dot"></span><span id="liveText">…</span></button>
     <button class="btn ghost" id="searchBtn" type="button" aria-label="Search"><span aria-hidden="true">⌕</span><span class="hide-sm" data-i18n="search">Search</span><kbd class="hide-sm">Ctrl K</kbd></button>
+    <button class="btn ghost icon" id="viewBtn" type="button" aria-label="Layout"></button>
     <div class="seg mode" role="group" aria-label="Mode"><button type="button" data-mode-btn="simple">Simple</button><button type="button" data-mode-btn="pro">Pro</button></div>
     <button class="btn ghost toggle" id="explainBtn" type="button" aria-pressed="false" title="Explain every number"><span aria-hidden="true">ⓘ</span><span class="hide-sm" data-i18n="explain">Explain</span></button>
     <button class="btn ghost" id="runBtn" type="button" hidden><span aria-hidden="true">↻</span><span class="hide-sm" data-i18n="update_now">Update now</span></button>
