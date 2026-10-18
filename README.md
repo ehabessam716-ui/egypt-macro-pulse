@@ -21,6 +21,14 @@ today, the economy as a chain of 16 boxes (red = hurting the pound, blue = helpi
 from cause to effect, a 2-minute guided tour and 8 five-minute lessons with quizzes, all using today's numbers
 (`pulse/outputs/chain.py`, `config/lessons.yaml`). **Pro** is the full dashboard. Link options: `?mode=simple|pro`, `?lang=ar`.
 
+**Phone or computer:** the layout is picked automatically (phone layout on Android/phones, wide layout on
+computers); the 📱/🖥 button cycles Auto → Phone → Desktop and remembers the choice (`?view=auto|mobile|desktop`).
+**Install on Android:** open the link in Chrome → menu → *Install app* / *Add to Home screen* — it opens full-screen
+with its own icon and still updates live (service worker: app files cached, data always fetched fresh).
+
+**Live chain:** `.github/workflows/live.yml` runs every ~15 minutes by starting its own next run (GitHub's cron for
+frequent schedules proved unreliable on this new repo); cron and the main workflow restart the chain if it stops.
+
 **Hot money gauges:** CIB in Cairo vs its London GDR (implied dollar rate and premium), EGX30 in dollars, T-bill demand
 and carry — combined in rule HM01. **Data audit:** `pulse audit` (also every run) checks ranges, accounting identities
 and cross-source consistency → `reports/data_audit.md` and the Data page.
