@@ -83,6 +83,13 @@ jobs:
       - name: Health check
         run: python -m pulse.cli doctor || true
 
+      - name: Live layer + save the finished site
+        run: |
+          python -m pulse.cli live --prev "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/data/live.js" || echo "live layer skipped"
+          tar -czf site.tar.gz -C site .
+          gh release view state >/dev/null 2>&1 || gh release create state --title "Pulse state (database)" --notes "SQLite database and last built site used by the scheduled runs. Updated automatically." --latest=false
+          gh release upload state site.tar.gz --clobber
+
       - name: Save database
         if: steps.job.outputs.job != 'analyse'
         run: |

@@ -28,12 +28,21 @@ def collect(conn, ctx) -> int:
             errors.append(f"{tkr}: empty")
             continue
         h = h.dropna(subset=["Close"])
+        note = "daily close as reported by Yahoo"
+        if len(h) <= 5:  # e.g. ^CASE30: Yahoo serves no daily history — use hourly bars
+            try:
+                hh = yf.Ticker(tkr).history(period="730d", interval="1h").dropna(subset=["Close"])
+                if len(hh) > len(h):
+                    h = hh.groupby(hh.index.date).tail(1)
+                    note = "daily close = last hourly bar of the day (Yahoo has no daily history for this symbol)"
+            except Exception:  # noqa: BLE001
+                pass
         unit = catalog()[sid].get("unit")
         for idx, close in zip(h.index, h["Close"]):
             res = add_obs(conn, sid, idx.date(), float(close), unit=unit,
                           source_name=f"Yahoo Finance {tkr} (unofficial)",
                           source_url=f"https://finance.yahoo.com/quote/{tkr}", quality_flag="unofficial",
-                          obs_note="daily close as reported by Yahoo")
+                          obs_note=note)
             rows += res in ("new", "revised", "conflict")
         time.sleep(0.5)
     if errors and rows == 0 and len(errors) == len(ticker_map()):

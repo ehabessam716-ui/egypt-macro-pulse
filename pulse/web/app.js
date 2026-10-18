@@ -66,6 +66,11 @@
     rose: ['rose', 'زاد'], fell: ['fell', 'قل'], flat: ['was unchanged', 'فضل ثابت'], from_: ['from', 'من'], to_: ['to', 'لـ'],
     if_rises: ['If it rises', 'لو زاد'], if_falls: ['If it falls', 'لو قل'],
     no_history: ['Only one reading so far — history builds from now.', 'فيه قراءة واحدة بس لحد دلوقتي، والتاريخ هيتبني من النهارده.'],
+    right_now: ['Right now', 'دلوقتي'], live_note: ['Delayed market quotes, refreshed automatically about every 15 minutes. Official figures update when the source publishes.',
+      'أسعار السوق متأخرة شوية وبتتحدث لوحدها كل ربع ساعة تقريبا، والأرقام الرسمية بتتحدث لما المصدر ينشر.'],
+    live_reads: ['Live reads', 'قراءة سريعة'], headlines: ['Latest headlines', 'آخر الأخبار'], closed_mkt: ['closed', 'مقفول'],
+    open_mkt: ['live', 'شغال'], cbe_today: ['CBE official rate', 'السعر الرسمي للبنك المركزي'], gold21_now: ['Gold 21K in Egypt', 'جرام الدهب عيار 21'],
+    prices_updated: ['prices updated', 'الأسعار اتحدثت'],
     help_ppi: ['Each sub-index compares today with the last 3 years (z-score → −100…+100), adds fired rules and decaying events. Weights: config/indices.yaml.',
       'كل مؤشر فرعي بيقارن النهارده بآخر 3 سنين، وبيضيف الإشارات والأحداث. الأوزان في ملف الإعدادات.'],
   };
@@ -82,7 +87,7 @@
   const S = {
     D: null, version: null, lang: store('pulse.lang') === 'ar' ? 'ar' : 'en', theme: store('pulse.theme') || 'auto',
     route: 'overview', sigFilter: 'fired', ranges: {}, seriesCache: {}, server: false, running: false, lastPoll: null,
-    palIndex: 0, flashIds: new Set(), dataFilter: '', explain: store('pulse.explain') === '1',
+    L: null, liveFlash: new Set(), palIndex: 0, flashIds: new Set(), dataFilter: '', explain: store('pulse.explain') === '1',
   };
   const t = (k) => (I18N[k] ? I18N[k][S.lang === 'ar' ? 1 : 0] : k);
   const AR = () => S.lang === 'ar';
@@ -107,6 +112,7 @@
   }
   const loadBundle = () => loadJs('data/pulse-data.js', '__pulseData');
   const loadManifest = () => loadJs('data/manifest.js', '__pulseManifest');
+  const loadLive = () => loadJs('data/live.js', '__pulseLive');
   async function loadSeries(id) {
     if (S.seriesCache[id] && S.seriesCache[id].version === S.version) return S.seriesCache[id];
     const p = await loadJs('data/series/' + encodeURIComponent(id) + '.js', '__pulseSeries');
@@ -417,6 +423,60 @@
   }
   function drawAllCharts() { $$('[data-chartkey]').forEach((el) => drawChart(el.dataset.chartkey)); }
 
+  // ------------------------------------------------------------------ live layer (intraday, ~15 min)
+  const LIVE_SERIES = { usd_egp: 'fx_market', egx30: 'egx30', brent: 'brent_fut', gold: 'xauusd', dxy: 'dxy', vix: 'vix',
+    us10y: 'us10y', wheat: 'wheat', gas_eu: 'ttf_fut', em_eq: 'msci_em_proxy' };
+  function timeOnly(iso) { return iso ? iso.slice(11, 16) : ''; }
+  function liveSection() {
+    const L = S.L;
+    if (!L) return '';
+    const chips = L.quotes.map((q) => {
+      const dir = Math.sign(q.chg || 0) * (q.sign || 0);
+      const cls = dir > 0 ? 'p' : dir < 0 ? 'r' : 'n';
+      const arrow = (q.chg || 0) > 0 ? '▲' : (q.chg || 0) < 0 ? '▼' : '■';
+      const sid = LIVE_SERIES[q.id];
+      return `<button class="lq${S.liveFlash.has(q.id) ? ' flash' : ''}" ${sid ? `data-series="${sid}"` : ''} title="${esc(q.source)} · ${esc(q.ts)}">
+        <span class="lq-n">${esc(AR() ? q.name_ar : q.name_en)}</span>
+        <span class="lq-v num">${nf(q.price, q.digits)}<small>${esc(q.unit)}</small></span>
+        <span class="t-chg ${cls}"><span aria-hidden="true">${arrow}</span><span class="num">${q.chg_pct == null ? '—' : (q.chg_pct > 0 ? '+' : '') + nf(q.chg_pct, 2) + '%'}</span></span>
+        ${sparkSvg(q.spark)}
+        <span class="lq-t"><span class="pill ${q.open ? 'live-on' : ''}">${esc(q.open ? t('open_mkt') : t('closed_mkt'))}</span> <span class="num">${esc(q.open ? timeOnly(q.ts) : fmtDate(q.ts.slice(0, 10)))}</span></span></button>`;
+    }).join('');
+    const reads = L.insights.map((i) => {
+      const cls = i.dir > 0 ? 'p' : i.dir < 0 ? 'r' : 'n';
+      const src = (i.sources || []).map((x) => `<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.name)}</a>${x.at ? ` <span class="num">${esc(timeOnly(x.at))}</span>` : ''}`).join(' · ');
+      return `<div class="sig ${cls}"><p>${AR() ? bidi(esc(i.ar)) : esc(i.en)}</p><div class="tiny muted" style="margin-top:4px">${src}</div></div>`;
+    }).join('');
+    const news = (L.news || []).slice(0, 6).map((n) => `<li><a href="${esc(n.url)}" target="_blank" rel="noopener">${esc(n.title)}</a>
+      <span class="tiny muted">${esc(n.outlet)} · ${esc(ago(n.at))}</span></li>`).join('');
+    const cbe = L.cbe ? `<div class="mini"><span class="muted small">${esc(t('cbe_today'))}</span><b class="num">${nf(L.cbe.buy, 4)}</b>
+      <span class="tiny muted">${esc(fmtDate(L.cbe.date))} · <a href="${esc(L.cbe.url)}" target="_blank" rel="noopener">CBE ↗</a></span></div>` : '';
+    const gold = L.gold_eg ? `<div class="mini"><span class="muted small">${esc(t('gold21_now'))}</span><b class="num">${nf(L.gold_eg.k21, 0)} EGP</b>
+      <span class="tiny muted"><span class="num">${esc(timeOnly(L.gold_eg.ts))}</span> · <a href="${esc(L.gold_eg.url)}" target="_blank" rel="noopener">banklive ↗</a></span></div>` : '';
+    return `<section class="card live-card"><h3><span><span class="live-dot"></span>${esc(t('right_now'))}</span>
+        <span class="tiny muted">${esc(t('prices_updated'))} ${esc(ago(L.generated))} · <span class="num">${esc(timeOnly(L.generated))}</span> Cairo</span></h3>
+      <div class="lq-row">${chips}</div>
+      <div class="grid g-live">
+        <div><div class="small muted" style="margin:10px 0 6px">${esc(t('live_reads'))}</div><div class="story">${reads}</div></div>
+        <div><div class="minis">${cbe}${gold}</div><div class="small muted" style="margin:12px 0 6px">${esc(t('headlines'))}</div><ul class="news">${news}</ul></div>
+      </div>
+      <p class="tiny muted" style="margin:8px 0 0">${esc(t('live_note'))}</p></section>`;
+  }
+  async function pollLive(announce) {
+    try {
+      const L = await loadLive();
+      const old = S.L;
+      S.L = L;
+      if (old && old.generated !== L.generated) {
+        S.liveFlash = new Set(L.quotes.filter((q) => { const o = old.quotes.find((x) => x.id === q.id); return o && o.price !== q.price; }).map((q) => q.id));
+        if (S.route === 'overview') { const el = $('#liveSlot'); if (el) el.innerHTML = liveSection(); }
+        setTimeout(() => { S.liveFlash = new Set(); }, 2500);
+      }
+      S.lastPoll = Date.now();
+    } catch (e) { /* live.js not published yet */ }
+    updateLive();
+  }
+
   // ------------------------------------------------------------------ views
   function viewOverview() {
     const D = S.D;
@@ -432,7 +492,8 @@
     const cal = D.calendar.filter((c) => c.status !== 'done').slice(0, 5).map(calItem).join('');
     const evs = D.events.slice(0, 5).map(evItem).join('') || `<p class="muted">${esc(t('no_events'))}</p>`;
     return `<div class="view">
-      <div class="grid g-hero">
+      <div id="liveSlot">${liveSection()}</div>
+      <div class="grid g-hero" style="margin-top:12px">
         <section class="card hero ${p.sufficient ? '' : 'insufficient'}">
           <div class="hero-top"><div><div class="eyebrow">${esc(t('ppi'))}</div><div class="tiny muted">${esc(t('ppi_scale'))}</div></div>
             <span class="pill" title="${esc(t('help_ppi'))}">ⓘ ${esc(fmtDate(D.as_of))}</span></div>
@@ -724,7 +785,8 @@
     el.classList.toggle('on', !!ok && !S.running);
     el.classList.toggle('busy', S.running);
     const next = S.D.next_runs && S.D.next_runs[0];
-    $('#liveText').textContent = S.running ? t('running') : `${ok ? t('live') : t('snapshot')} · ${t('updated')} ${ago(S.D.generated)}`;
+    const fresh = S.L && S.L.generated > S.D.generated ? S.L.generated : S.D.generated;
+    $('#liveText').textContent = S.running ? t('running') : `${ok ? t('live') : t('snapshot')} · ${t('updated')} ${ago(fresh)}`;
     el.title = next ? `${t('next_update')}: ${next.job} ${next.at.slice(0, 16).replace('T', ' ')} (${until(next.at)})` : '';
   }
   function toast(title, body, ms = 6000) {
@@ -829,9 +891,12 @@
     if (series) openSeries(series);
     await detectServer();
     updateLive();
+    await pollLive(false);
+    if (S.route === 'overview') { const el = $('#liveSlot'); if (el) el.innerHTML = liveSection(); }
     setInterval(poll, 60 * 1000);
+    setInterval(() => pollLive(true), 60 * 1000);
     setInterval(updateLive, 30 * 1000);
-    document.addEventListener('visibilitychange', () => { if (!document.hidden) poll(); });
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) { poll(); pollLive(true); } });
     window.addEventListener('load', () => drawAllCharts());
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();

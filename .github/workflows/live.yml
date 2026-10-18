@@ -1,0 +1,56 @@
+# Live layer: every ~15 minutes, refresh intraday market quotes + live insights and republish the site.
+# Takes the last full site from the "state" release (saved by the main Pulse workflow), so nothing else changes.
+name: Pulse live
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pulse-live
+  cancel-in-progress: true
+
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PYTHONIOENCODING: utf-8
+      SITE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: requirements-ci.txt
+      - name: Install
+        run: pip install -r requirements-ci.txt && pip install -e .
+      - name: Restore last full site + database
+        run: |
+          mkdir -p data site
+          gh release download state --pattern pulse.db --pattern site.tar.gz --dir data --clobber
+          tar -xzf data/site.tar.gz -C site
+          cp pulse/web/* site/   # always ship the latest app code
+      - name: Refresh live quotes and insights
+        run: python -m pulse.cli live --prev "$SITE_URL/data/live.js"
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: live
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

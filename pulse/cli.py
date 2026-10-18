@@ -109,6 +109,8 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("analyse", help="derive → rules → indices → brief → dashboard → export")
     for name in ("derive", "rules", "indices", "backtest", "dashboard", "brief", "weekly", "export", "calendar"):
         sub.add_parser(name)
+    lv = sub.add_parser("live", help="refresh intraday quotes + live insights (site/data/live.js)")
+    lv.add_argument("--prev", help="previously published live.js (URL or file) to keep intraday history")
     sv = sub.add_parser("serve", help="open the app at http://localhost:8765 (live updates + Update-now button)")
     sv.add_argument("--port", type=int, default=8765)
     sv.add_argument("--open", action="store_true", help="open the browser")
@@ -131,6 +133,9 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if a.cmd == "init":
             init(conn)
+        elif a.cmd == "live":
+            from .live import write_live
+            print(write_live(conn, a.prev))
         elif a.cmd == "collect":
             from .collectors import Ctx, run_collectors
             init(conn)

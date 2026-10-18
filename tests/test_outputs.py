@@ -127,3 +127,20 @@ def test_level_basis_reads_impact_from_level():
     assert explain_for("tbill_12m_btc")["basis"] == "level" and explain_for("tbill_12m_btc")["pivot"] == 1.2
     assert explain_for("fx_chg_3m")["basis"] == "level" and explain_for("pmi")["pivot"] == 50
     assert explain_for("fx_cbe_official").get("basis") is None
+
+
+def test_live_insights_without_network(conn):
+    from pulse.data import DataView
+    from pulse.live import insights
+    put(conn, "budget_oil_assumption", "2026-07-01", 75, quality="secondary")
+    q = lambda i, p, c, sign=1: {"id": i, "price": p, "chg_pct": c, "chg": c, "sign": sign, "open": False,
+                                 "ts": "2026-10-16T23:45+03:00", "source": "Yahoo (test)", "url": "https://example.org/q"}
+    quotes = [q("usd_egp", 53.40, 0.04), q("brent", 109.86, 4.47), q("egx30", 50896, -2.63, 0), q("vix", 30.0, 5.0), q("dxy", 101.8, 0.1)]
+    gold = {"k21": 6270, "xau": 4165.42, "ts": "2026-10-18T15:00+03:00", "source": "banklive", "url": "https://example.org/g"}
+    cbe = {"buy": 53.4717, "date": "2026-10-18", "source": "CBE", "url": "https://example.org/cbe"}
+    out = {i["id"]: i for i in insights(quotes, gold, cbe, DataView(conn))}
+    assert out["gold_gap"]["dir"] == 0 and "+0.07%" in out["gold_gap"]["en"]
+    assert out["oil_gap"]["dir"] == 1 and "+$34.9" in out["oil_gap"]["en"] and "last session" in out["oil_gap"]["en"]
+    assert out["risk"]["dir"] == 1  # VIX above 25 = risk-off
+    for i in out.values():
+        assert i["sources"] and all(s["url"].startswith("http") for s in i["sources"]) and i["ar"]
