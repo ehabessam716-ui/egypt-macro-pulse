@@ -1,0 +1,128 @@
+# Beginner lessons (EN / Egyptian Arabic). {placeholders} are filled with today's live numbers.
+# Each lesson: a few short steps + one quiz question. `nodes` link to boxes in the chain.
+
+lessons:
+  - id: rate
+    icon: "£"
+    title: ["What is an exchange rate?", "يعني إيه سعر الصرف؟"]
+    minutes: 2
+    nodes: [pound]
+    steps:
+      - ["Think of the dollar as a product. Its price in Egypt today is {fx} pounds.", "اعتبر الدولار سلعة، وسعرها في مصر النهارده {fx} جنيه."]
+      - ["Like any product, the price rises when many people want dollars and few dollars are available — and falls when dollars are plentiful.", "زي أي سلعة، سعره بيزيد لما الطلب عليه كتير والمعروض قليل، وبيقل لما الدولارات كتير."]
+      - ["When the price goes up we say the pound got weaker: you need more pounds for the same dollar.", "لما السعر يزيد بنقول الجنيه ضعف، لأنك محتاج جنيهات أكتر لنفس الدولار."]
+      - ["Why care? Egypt imports fuel, wheat and many medicines. A weaker pound makes all of them more expensive.", "ليه يهمك؟ مصر بتستورد وقود وقمح وأدوية كتير، والجنيه الأضعف بيغليهم كلهم."]
+    quiz:
+      q: ["The dollar goes from 50 to 55 pounds. What happened to the pound?", "الدولار طلع من 50 لـ 55 جنيه. حصل إيه للجنيه؟"]
+      options: [["It got stronger", "قوي"], ["It got weaker", "ضعف"], ["Nothing", "ولا حاجة"]]
+      answer: 1
+      why: ["You now need more pounds for one dollar, so each pound is worth less.", "بقيت محتاج جنيهات أكتر للدولار، يعني الجنيه قيمته قلت."]
+
+  - id: inflows
+    icon: "⇄"
+    title: ["Where Egypt's dollars come from", "مصر بتجيب الدولارات منين؟"]
+    minutes: 3
+    nodes: [remit, tourism, suez, hot, imf]
+    steps:
+      - ["Egypt earns dollars from five main places. The biggest: Egyptians working abroad, who send about {remit} billion dollars home every month.", "مصر بتكسب دولارات من خمس أماكن أساسية، أكبرهم المصريين اللي شغالين برة، بيبعتوا حوالي {remit} مليار دولار كل شهر."]
+      - ["Then tourism, the Suez Canal (ships are at {suez} of their normal traffic), and exports.", "بعدها السياحة، وقناة السويس (حركة السفن {suez} من الطبيعي)، والصادرات."]
+      - ["Foreign investors also bring dollars to earn Egypt's high interest — but this 'hot money' can leave quickly.", "وكمان المستثمرين الأجانب بيجيبوا دولارات عشان الفايدة العالية، بس الأموال الساخنة دي ممكن تخرج بسرعة."]
+      - ["Finally the IMF and Gulf countries lend or invest — they also boost confidence.", "وأخيرا صندوق النقد ودول الخليج بيقرضوا أو بيستثمروا، وده بيزود الثقة."]
+    quiz:
+      q: ["Which is Egypt's single largest source of dollars?", "إيه أكبر مصدر دولار لمصر؟"]
+      options: [["Suez Canal", "قناة السويس"], ["Money sent by Egyptians abroad", "تحويلات المصريين في الخارج"], ["Tourism", "السياحة"]]
+      answer: 1
+      why: ["Remittances were about $47bn last fiscal year — more than tourism and Suez combined.", "التحويلات كانت حوالي 47 مليار دولار في السنة المالية اللي فاتت، أكتر من السياحة والقناة مع بعض."]
+
+  - id: outflows
+    icon: "🛢"
+    title: ["Where the dollars go", "الدولارات بتروح فين؟"]
+    minutes: 2
+    nodes: [energy, food, debt]
+    steps:
+      - ["Egypt buys more from abroad than it sells. Fuel and gas alone cost about {oil_imports} billion dollars last fiscal year.", "مصر بتشتري من برة أكتر ما بتبيع، والبترول والغاز لوحدهم كلفوا حوالي {oil_imports} مليار دولار السنة المالية اللي فاتت."]
+      - ["Wheat and other food are next — Egypt is one of the world's largest wheat buyers.", "بعدهم القمح والأكل، ومصر من أكبر مشتري القمح في العالم."]
+      - ["And foreign debts must be repaid in dollars every year.", "وكمان الديون الخارجية لازم تتسدد بالدولار كل سنة."]
+      - ["When more dollars go out than come in, the gap is called the current-account deficit — it was {ca_deficit} billion dollars last year.", "لما الدولارات الخارجة تبقى أكتر من الداخلة، الفرق اسمه عجز الحساب الجاري، وكان {ca_deficit} مليار دولار السنة اللي فاتت."]
+    quiz:
+      q: ["Oil gets much more expensive. What happens to Egypt's dollar outflows?", "البترول غلي جامد. يحصل إيه للدولارات الخارجة من مصر؟"]
+      options: [["They rise", "بتزيد"], ["They fall", "بتقل"], ["No effect", "مفيش تأثير"]]
+      answer: 0
+      why: ["Egypt imports fuel, so a higher price means paying more dollars for the same amount.", "مصر بتستورد وقود، فالسعر الأعلى معناه دولارات أكتر لنفس الكمية."]
+
+  - id: reserves
+    icon: "🏛"
+    title: ["Egypt's savings account", "حساب التوفير بتاع مصر"]
+    minutes: 2
+    nodes: [reserves, pound]
+    steps:
+      - ["The Central Bank keeps a stash of dollars and gold for emergencies: {nir} billion dollars today.", "البنك المركزي شايل دولارات ودهب للطوارئ، حوالي {nir} مليار دولار النهارده."]
+      - ["That's enough to pay for about {months} months of imports. Economists like at least 3–5 months.", "ده يكفي استيراد حوالي {months} شهور، والاقتصاديين بيحبوا يبقى على الأقل من 3 لـ 5 شهور."]
+      - ["Watch out: if the savings shrink while the dollar price stays frozen, the bank may be spending savings to hold the rate — that can't last forever.", "خلي بالك: لو المدخرات بتقل والدولار ثابت، ممكن البنك بيصرف من المدخرات عشان يثبت السعر، وده مش هيستمر على طول."]
+    quiz:
+      q: ["Reserves fall for 3 months but the dollar rate doesn't move. What might be happening?", "الاحتياطي بيقل 3 شهور والدولار ثابت. إيه اللي ممكن يكون بيحصل؟"]
+      options: [["The pound is naturally strong", "الجنيه قوي لوحده"], ["The bank is defending the rate with savings", "البنك بيسند السعر من المدخرات"], ["Nothing important", "مفيش حاجة مهمة"]]
+      answer: 1
+      why: ["Economists call it a 'hidden peg' — it often ends with a sudden jump in the dollar price.", "الاقتصاديين بيسموه تثبيت مستخبي، وغالبا بيخلص بقفزة مفاجئة في سعر الدولار."]
+
+  - id: interest
+    icon: "%"
+    title: ["Interest rates and 'hot money'", "الفايدة والأموال الساخنة"]
+    minutes: 3
+    nodes: [rates, hot]
+    steps:
+      - ["The Central Bank pays {odr} on deposits. Prices are rising {cpi} a year.", "البنك المركزي بيدي {odr} فايدة على الإيداع، والأسعار بتزيد {cpi} في السنة."]
+      - ["The difference — {real} points — is the 'real' interest rate: what savers truly gain after inflation.", "الفرق، {real} نقطة، اسمه الفايدة الحقيقية، يعني المكسب الحقيقي بعد التضخم."]
+      - ["Foreign investors love a high real rate: they bring dollars, buy Egyptian treasury bills and earn it. That supports the pound.", "المستثمرين الأجانب بيحبوا الفايدة الحقيقية العالية، فبيجيبوا دولارات ويشتروا أذون خزانة، وده بيسند الجنيه."]
+      - ["But if they fear the pound will fall, they all rush out at once — that's why it's called 'hot money'.", "بس لو خافوا الجنيه يضعف بيخرجوا كلهم مرة واحدة، عشان كده اسمها أموال ساخنة."]
+    quiz:
+      q: ["Inflation jumps while interest rates stay the same. The real rate…", "التضخم زاد جامد والفايدة ثابتة. الفايدة الحقيقية…"]
+      options: [["rises", "بتزيد"], ["falls", "بتقل"], ["doesn't change", "مبتتغيرش"]]
+      answer: 1
+      why: ["Real rate = interest minus inflation. Higher inflation shrinks it, making the pound less attractive.", "الفايدة الحقيقية = الفايدة ناقص التضخم، فالتضخم الأعلى بيقللها والجنيه بيبقى أقل جاذبية."]
+
+  - id: inflation
+    icon: "🛒"
+    title: ["Why prices keep rising", "ليه الأسعار بتزيد؟"]
+    minutes: 2
+    nodes: [prices, pound, life]
+    steps:
+      - ["Prices in cities are {cpi} higher than a year ago.", "الأسعار في المدن أعلى {cpi} من السنة اللي فاتت."]
+      - ["A weaker pound raises the cost of everything imported — and that spreads to local goods over 1–6 months. Economists call it 'pass-through'.", "ضعف الجنيه بيغلي كل حاجة مستوردة، وده بيعدي على الحاجات المحلية خلال شهر لستة شهور."]
+      - ["Government decisions matter too: fuel prices are frozen until December, so part of the oil shock is postponed, not cancelled.", "قرارات الحكومة كمان مهمة: البنزين متثبت لحد ديسمبر، يعني جزء من غلو البترول متأجل مش ملغي."]
+    quiz:
+      q: ["The pound weakens today. When do shop prices usually feel it?", "الجنيه ضعف النهارده. الأسعار في المحلات بتتأثر إمتى؟"]
+      options: [["The same day", "نفس اليوم"], ["Over the next 1–6 months", "خلال شهر لستة شهور"], ["Never", "أبدا"]]
+      answer: 1
+      why: ["Shops sell existing stock first; new imports at the new price arrive gradually.", "المحلات بتبيع البضاعة القديمة الأول، والمستورد الجديد بالسعر الجديد بيوصل بالتدريج."]
+
+  - id: shocks
+    icon: "⚔"
+    title: ["How a war far away hits your wallet", "إزاي حرب بعيدة بتأثر على جيبك"]
+    minutes: 3
+    nodes: [wars, oil, suez, tourism]
+    steps:
+      - ["A war in the region pushes oil up — Brent is now {brent} a barrel versus the {budget} the budget assumed.", "الحرب في المنطقة بتغلي البترول، وبرنت دلوقتي {brent} للبرميل مقابل {budget} في الموازنة."]
+      - ["Ships avoid the Red Sea, so fewer pass through Suez ({suez} of normal) — fewer canal dollars.", "السفن بتبعد عن البحر الأحمر، فعدد أقل بيعدي من القناة ({suez} من الطبيعي)، يعني دولارات أقل."]
+      - ["Tourists hesitate and foreign investors get nervous. Economists call this the 'triple hit'.", "السياح بيترددوا والمستثمرين بيقلقوا، وده اسمه الضربة التلاتية."]
+      - ["More dollars out, fewer in → pressure on the pound → higher prices at home.", "دولارات خارجة أكتر وداخلة أقل، يعني ضغط على الجنيه وأسعار أعلى."]
+    quiz:
+      q: ["Which of these is NOT hurt by a regional war?", "إيه اللي مش بيتأذي من حرب في المنطقة؟"]
+      options: [["Suez Canal income", "دخل قناة السويس"], ["Tourism", "السياحة"], ["The price of oil Egypt pays", "سعر البترول اللي مصر بتدفعه"], ["None — all are hurt", "ولا حاجة، كلهم بيتأذوا"]]
+      answer: 3
+      why: ["War raises oil costs and cuts Suez and tourism income at the same time.", "الحرب بتغلي البترول وبتقلل دخل القناة والسياحة في نفس الوقت."]
+
+  - id: read
+    icon: "◉"
+    title: ["Reading today's page in 1 minute", "تقرا الصفحة في دقيقة"]
+    minutes: 1
+    nodes: [pound, reserves, hot]
+    steps:
+      - ["Start at the top sentence: it sums up today in plain words.", "ابدأ بالجملة اللي فوق، بتلخص النهارده بكلام بسيط."]
+      - ["Red boxes in the chain hurt the pound, blue boxes help it, grey ones are steady. Tap any box to see why.", "المربعات الحمرا بتضغط على الجنيه، والزرقا بتساعده، والرمادي ثابت. دوس على أي مربع تعرف السبب."]
+      - ["Check 'Right now' for live prices, and the gold-implied rate: if it drifts more than 3% above the official {fx}, people expect a weaker pound.", "شوف دلوقتي للأسعار المباشرة، ودولار الدهب: لو بعد أكتر من 3% فوق الرسمي {fx} يبقى الناس متوقعة ضعف الجنيه."]
+    quiz:
+      q: ["A box is red. What does that mean?", "مربع لونه أحمر. ده معناه إيه؟"]
+      options: [["It is helping the pound", "بيساعد الجنيه"], ["It is putting pressure on the pound", "بيضغط على الجنيه"], ["It has no data", "مفيهوش بيانات"]]
+      answer: 1
+      why: ["Red = pressure, blue = relief, grey = steady.", "الأحمر ضغط، والأزرق راحة، والرمادي ثابت."]

@@ -183,23 +183,23 @@ def build_fx(v: DataView, w: Writer) -> None:
                   f"{_cite(t12)} − gold_gap_pct={g:.2f} (expected depreciation proxy, {d.date()})")
 
 
-def _brent_daily(v: DataView) -> pd.Series:
-    """FRED spot; after its last date, Yahoo futures are appended only if the spot series is stale."""
-    spot = v.series("brent")
-    lat = v.latest("brent")
-    if lat is not None and lat.stale >= 1:
-        fut = v.series("brent_fut")
-        fut = fut[fut.index > (spot.index[-1] if not spot.empty else pd.Timestamp("1900-01-01"))]
-        return pd.concat([spot, fut]).sort_index()
-    return spot
+def _brent_daily(v: DataView) -> tuple[pd.Series, str]:
+    """Benchmark Brent for the budget comparison: front-month futures (the price the press, the MoF and
+    markets quote). Falls back to EIA dated spot where no futures close exists. The spot-vs-futures premium
+    is tracked separately (brent_spot_premium_pct)."""
+    fut, spot = v.series("brent_fut"), v.series("brent")
+    if fut.empty:
+        return spot, "brent (FRED DCOILBRENTEU, EIA spot)"
+    extra = spot[spot.index > fut.index[-1]]
+    return pd.concat([fut, extra]).sort_index(), "brent_fut (Yahoo BZ=F, benchmark futures)"
 
 
 def build_energy(v: DataView, w: Writer) -> None:
-    b = _brent_daily(v)
-    spot_last = v.series("brent").index.max() if v.has("brent") else None
+    b, main_src = _brent_daily(v)
+    fut_idx = set(v.series("brent_fut").index)
     for d, price in b.items():
         dd = d.date()
-        src = "brent (FRED DCOILBRENTEU, EIA spot)" if spot_last is not None and d <= spot_last else "brent_fut (Yahoo BZ=F, fallback)"
+        src = main_src if d in fut_idx or not fut_idx else "brent (FRED DCOILBRENTEU, EIA spot — no futures close that day)"
         bud = v.value_at("budget_oil_assumption", dd)
         if bud is not None:
             gap = price - bud.value
@@ -209,6 +209,14 @@ def build_energy(v: DataView, w: Writer) -> None:
         fx = v.value_at("fx_cbe_official", dd)
         if fx is not None and (dd - fx.date).days <= 4:
             w.put("brent_egp", dd, price * fx.value, "EGP/bbl", "brent_egp", f"{src}={price:g} on {dd} × {_cite(fx)}")
+
+
+def build_brent_spread(v: DataView, w: Writer) -> None:
+    spot, fut = v.series("brent"), v.series("brent_fut")
+    for d, sp in spot.items():
+        if d in fut.index and fut[d]:
+            w.put("brent_spot_premium_pct", d.date(), gap_pct(sp, fut[d]), "%", "gap_pct",
+                  f"brent spot {sp:g} (FRED DCOILBRENTEU, EIA) vs brent_fut {fut[d]:g} (Yahoo BZ=F), {d.date()}")
 
 
 def build_brent_quarter(v: DataView, w: Writer) -> None:
@@ -266,6 +274,25 @@ def build_external(v: DataView, w: Writer) -> None:
                   f"{key}_transits 7-day mean {m:.1f} to {d.date()} / 2023 daily mean {b:.1f} (IMF PortWatch, {len(base)} days)")
 
 
+def build_hot_money(v: DataView, w: Writer) -> None:
+    """CIB Cairo vs London (same-day closes only) and EGX30 in dollars."""
+    loc, gdr = v.series("cib_local"), v.series("cib_gdr")
+    for d, lp in loc.items():
+        if d not in gdr.index:
+            continue
+        implied = lp / gdr[d]
+        dd = d.date()
+        ins = f"cib_local={lp:g} EGP (Yahoo COMI.CA) / cib_gdr={gdr[d]:g} USD (Yahoo CBKD.IL), {dd}, 1 GDR = 1 share"
+        w.put("cib_gdr_implied_fx", dd, implied, "EGP per USD", "cib_gdr_implied_fx", ins)
+        off = v.value_at("fx_cbe_official", dd)
+        if off is not None and (dd - off.date).days <= 3:
+            w.put("cib_gdr_premium_pct", dd, gap_pct(implied, off.value), "%", "gap_pct", f"{ins}; {_cite(off)}")
+    for d, e in v.series("egx30").items():
+        off = v.value_at("fx_cbe_official", d.date())
+        if off is not None and (d.date() - off.date).days <= 3:
+            w.put("egx30_usd", d.date(), e / off.value, "index", "egx30_usd", f"egx30={e:g} (Yahoo ^CASE30) / {_cite(off)}")
+
+
 def build_real_and_global(v: DataView, w: Writer) -> None:
     p = v.series("pmi")
     for i, (d, val) in enumerate(p.items()):
@@ -310,8 +337,8 @@ def build_eda(v: DataView, w: Writer) -> None:
 
 def compute_all(conn) -> dict:
     w = Writer(conn)
-    steps = [build_real_rates, build_gold, build_fx, build_energy, build_brent_quarter, build_external,
-             build_real_and_global]
+    steps = [build_real_rates, build_gold, build_fx, build_energy, build_brent_spread, build_brent_quarter, build_external,
+             build_real_and_global, build_hot_money]
     for fn in steps:
         try:
             fn(DataView(conn), w)  # fresh view so later steps see earlier outputs

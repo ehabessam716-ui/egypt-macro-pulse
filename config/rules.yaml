@@ -50,6 +50,15 @@ rules:
     lag_note: "immediate"
     en: "Sharp move: USD/EGP changed {fx_chg_5d:+.2f}% in 5 CBE business days (alert above {pct_5d}%)."
     ar: "حركة حادة: سعر الدولار اتغير {fx_chg_5d:+.2f}% في 5 أيام عمل."
+  HM01:
+    name: hot_money_pulse
+    domain: fx
+    affects: [monetary, external]
+    concept_tag: hot money
+    params: {gdr_widen_pp: 3, window: 60, btc_min: 1.2, egx_usd_pct: 5, min_agree: 2}
+    lag_note: "days to weeks; hot money moves fast"
+    en: "Hot-money check — {summary}. {verdict}"
+    ar: "مؤشر الأموال الساخنة: {summary_ar}. {verdict_ar}"
   MO01:
     name: real_rate_cushion
     domain: monetary
@@ -255,7 +264,7 @@ rules:
     concept_tag: oil shock channels
     params: {gap: 10, strong: 25}
     lag_note: "fiscal monthly; inflation at the next fuel committee"
-    en: "Brent at ${brent:.1f} is ${gap:.1f} above the ${budget:.0f} budget assumption → fuel subsidy bill up (fiscal), import bill up (≈{ca:.1f}% of GDP on the current account by the IMF rule of thumb), and a pending fuel-price decision (inflation)."
+    en: "Brent (benchmark futures) at ${brent:.1f} is ${gap:.1f} above the ${budget:.0f} budget assumption → fuel subsidy bill up (fiscal), import bill up (≈{ca:.1f}% of GDP on the current account by the IMF rule of thumb), and a pending fuel-price decision (inflation)."
     ar: "البترول أعلى من سعر الموازنة بحوالي {gap:.0f} دولار للبرميل، وده بيزود دعم الوقود وفاتورة الاستيراد وبيضغط على أسعار البنزين بعدين."
   EC02:
     name: fuel_committee_lag

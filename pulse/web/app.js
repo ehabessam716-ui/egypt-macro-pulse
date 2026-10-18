@@ -71,12 +71,28 @@
     live_reads: ['Live reads', 'قراءة سريعة'], headlines: ['Latest headlines', 'آخر الأخبار'], closed_mkt: ['closed', 'مقفول'],
     open_mkt: ['live', 'شغال'], cbe_today: ['CBE official rate', 'السعر الرسمي للبنك المركزي'], gold21_now: ['Gold 21K in Egypt', 'جرام الدهب عيار 21'],
     prices_updated: ['prices updated', 'الأسعار اتحدثت'],
+    simple: ['Simple', 'بسيط'], pro: ['Pro', 'محترف'], home: ['Today', 'النهارده'], learn_tab: ['Learn', 'اتعلم'], live_tab: ['Live', 'مباشر'],
+    chain_title: ['How it all connects', 'إزاي كل حاجة مرتبطة ببعض'],
+    chain_hint: ['Tap any box to learn what it is and why it matters. Red = hurting the pound · Blue = helping · Grey = steady.',
+      'دوس على أي مربع تعرف هو إيه وليه مهم. الأحمر بيضغط على الجنيه، والأزرق بيساعده، والرمادي ثابت.'],
+    start_tour: ['Start the 2-minute tour', 'ابدأ جولة الدقيقتين'], helping: ['helping the pound', 'بيساعد الجنيه'],
+    hurting: ['hurting the pound', 'بيضغط على الجنيه'], steady: ['steady', 'ثابت'], no_data_short: ['no data yet', 'مفيش بيانات'],
+    in_one_line: ['In one line', 'في سطر واحد'], right_now_t: ['Right now', 'دلوقتي'], why_matters: ['Why it matters for the pound', 'ليه مهم للجنيه'],
+    what_next: ['What could happen next', 'إيه اللي ممكن يحصل'], affects: ['This affects', 'ده بيأثر على'], caused_by: ['Affected by', 'بيتأثر بـ'],
+    see_numbers: ['See the numbers', 'شوف الأرقام'], next: ['Next', 'التالي'], back: ['Back', 'رجوع'], finish: ['Finish', 'خلصت'],
+    step_of: ['Step', 'خطوة'], of: ['of', 'من'], lessons_title: ['Learn in 5 minutes', 'اتعلم في 5 دقايق'],
+    lessons_hint: ['Short lessons that use today\'s real numbers. No jargon.', 'دروس قصيرة بأرقام النهارده الحقيقية ومن غير مصطلحات صعبة.'],
+    min_read: ['min', 'دقيقة'], done: ['done', 'خلصته'], quiz: ['Quick check', 'سؤال سريع'], correct: ['Correct!', 'صح!'],
+    not_quite: ['Not quite.', 'مش بالظبط.'], related_boxes: ['Related boxes in the chain', 'مربعات مرتبطة في السلسلة'],
+    what_changed: ['What changed today', 'إيه اللي اتغير النهارده'], go_pro: ['Open the full Pro dashboard', 'افتح لوحة المحترفين'],
+    big_dollar: ['1 US dollar', 'الدولار الواحد'], big_gold: ['Gold says the dollar is', 'دولار الدهب'], big_oil: ['Oil (Brent)', 'البترول'],
+    pounds: ['pounds', 'جنيه'], per_barrel: ['per barrel', 'للبرميل'], tour_title: ['Guided tour', 'جولة سريعة'],
     help_ppi: ['Each sub-index compares today with the last 3 years (z-score → −100…+100), adds fired rules and decaying events. Weights: config/indices.yaml.',
       'كل مؤشر فرعي بيقارن النهارده بآخر 3 سنين، وبيضيف الإشارات والأحداث. الأوزان في ملف الإعدادات.'],
   };
-  const DOMAIN_ICON = { fx: '£', monetary: '%', external: '⇄', fiscal: '§', energy: '◆', real: '↗', global: '◎', geo: '⌖', health: '✚' };
+  const DOMAIN_ICON = { hot: '⇅', fx: '£', monetary: '%', external: '⇄', fiscal: '§', energy: '◆', real: '↗', global: '◎', geo: '⌖', health: '✚' };
   const SUB_TO_DOMAIN = { external: 'external', monetary: 'monetary', fiscal: 'fiscal', commodities: 'energy', geopolitical: 'geo', global: 'global' };
-  const DOMAIN_CHARTS = { fx: ['fx'], monetary: ['cpi', 'real'], external: ['nir', 'remit', 'choke'], fiscal: [], energy: ['brent'],
+  const DOMAIN_CHARTS = { hot: [], fx: ['fx'], monetary: ['cpi', 'real'], external: ['nir', 'remit', 'choke'], fiscal: [], energy: ['brent'],
     real: ['pmi'], global: [], geo: ['gpr', 'choke'], health: [] };
   const RULE_DOMAIN = { fx: 'fx', monetary: 'monetary', external: 'external', fiscal: 'fiscal', energy: 'energy', real: 'real',
     gold: 'energy', global: 'global', geopolitical: 'geo', healthcare: 'health' };
@@ -87,6 +103,8 @@
   const S = {
     D: null, version: null, lang: store('pulse.lang') === 'ar' ? 'ar' : 'en', theme: store('pulse.theme') || 'auto',
     route: 'overview', sigFilter: 'fired', ranges: {}, seriesCache: {}, server: false, running: false, lastPoll: null,
+    mode: store('pulse.mode') === 'pro' ? 'pro' : 'simple', tour: null,
+    lessonsDone: new Set((store('pulse.lessons') || '').split(',').filter(Boolean)), lesson: null,
     L: null, liveFlash: new Set(), palIndex: 0, flashIds: new Set(), dataFilter: '', explain: store('pulse.explain') === '1',
   };
   const t = (k) => (I18N[k] ? I18N[k][S.lang === 'ar' ? 1 : 0] : k);
@@ -136,14 +154,14 @@
       'EGP/litre': 'EGP/L', '% GDP': '% GDP', 'points': 'pts', 'index': '', 'ratio': '×', 'pp': 'pp', '%': '%', 'code': '', 'score': '', 'tone': '' };
     return m[u] ?? u;
   }
-  function valueHtml(s) {
-    if (s.value == null) return esc(t('no_data'));
+  function valueHtml(s) { return s.value == null ? esc(t('no_data')) : `<span class="vu" dir="ltr">${valueInner(s)}</span>`; }
+  function valueInner(s) {
     const u = s.unit;
     const d = digitsFor(s.value, u);
     if (u === '%') return `<span class="num">${nf(s.value, d)}%</span>`;
     if (u === 'pp') return `<span class="num">${s.value > 0 ? '+' : ''}${nf(s.value, 1)}</span><small>pp</small>`;
     const us = unitShort(u);
-    return `<span class="num">${nf(s.value, d)}</span>${us ? `<small>${esc(us)}</small>` : ''}`;
+    return `<span class="num">${nf(s.value, d)}</span>${us ? ` <small>${esc(us)}</small>` : ''}`;
   }
   function changeInfo(s) {
     if (s.change == null) return null;
@@ -215,6 +233,10 @@
   }
   // read the impact from the latest move, or from the level vs a threshold (gaps, changes, ratios)
   const impactDir = (s, moveChange) => (s.explain && s.explain.basis === 'level' && s.value != null) ? (s.value - (s.explain.pivot || 0)) : moveChange;
+  const META_AR = { daily: 'يومي', weekly: 'أسبوعي', monthly: 'شهري', quarterly: 'ربع سنوي', fiscal_year: 'سنة مالية', annual: 'سنوي',
+    per_auction: 'كل مزاد', event: 'عند الحدث', official: 'رسمي', secondary: 'مصدر صحفي', unofficial: 'غير رسمي', derived: 'محسوب',
+    manual: 'يدوي', SCRAPE: 'من موقع المصدر', FREE_API: 'واجهة مجانية', FREE_FILE: 'ملف مجاني', MANUAL: 'إدخال يدوي', PAID: 'مدفوع', DERIVED: 'محسوب' };
+  const meta = (x) => (AR() && META_AR[x] ? META_AR[x] : x);
   const EV_DOMAIN = { energy: 'commodities', gold: 'commodities', geopolitical: 'geopolitical', external: 'external', fiscal: 'fiscal', healthcare: 'healthcare', fx: 'fiscal', monetary: 'fiscal' };
   function explainPanel(s) {
     const ex = s.explain;
@@ -253,7 +275,7 @@
   }
   function badges(s) {
     const out = [];
-    if (s.quality) out.push(`<span class="pill ${s.quality === 'official' ? '' : 'sand'}">${esc(s.quality)}</span>`);
+    if (s.quality) out.push(`<span class="pill ${s.quality === 'official' ? '' : 'sand'}">${esc(meta(s.quality))}</span>`);
     if (s.stale === 1) out.push(`<span class="pill warn">${esc(t('stale'))}</span>`);
     if (s.stale === 2) out.push(`<span class="pill crit">${esc(t('very_stale'))}</span>`);
     if (s.closed) out.push(`<span class="pill">${esc(t('closed'))}</span>`);
@@ -278,7 +300,7 @@
     return `<button class="tile${flash}${S.explain ? ' explained' : ''}" data-series="${id}" aria-label="${esc(nm(s))}" title="${esc(what)}">
       <span class="t-name">${esc(nm(s))}</span>${exLines}
       <span class="t-val">${valueHtml(s)}</span>
-      ${ch ? `<span class="t-chg ${ch.cls}" title="${esc(ch.word)}"><span aria-hidden="true">${ch.arrow}</span><span class="num">${esc(ch.txt)}</span></span>` : '<span class="t-chg n">&nbsp;</span>'}
+      ${ch ? `<span class="t-chg ${ch.cls}" title="${esc(ch.word)}" dir="ltr"><span aria-hidden="true">${ch.arrow}</span><span class="num">${esc(ch.txt)}</span></span>` : '<span class="t-chg n">&nbsp;</span>'}
       ${exImpact}${sparkSvg(s.spark)}
       <span class="t-meta"><span class="num">${esc(fmtObs(s.date, s.freq))}</span>${badges(s)}</span></button>`;
   }
@@ -322,7 +344,7 @@
     const body = r.evaluable
       ? `<p>${AR() ? bidi(esc(text || '')) : esc(text || '')}</p>`
       : `<p class="muted small">${esc(t('missing'))}: ${esc((r.missing || []).join(', '))}</p>`;
-    return `<article class="sig ${cls}">
+    return `<article class="sig ${cls}" dir="auto">
       <div class="sig-head"><b>${esc(r.id)}</b><span class="pill">${esc(r.name || '')}</span>
         ${r.fired ? `<span class="pill ${cls === 'p' ? 'p' : cls === 'r' ? 'r' : 'sand'}">${esc(word)}</span><span class="strength" title="${esc(t('strength'))} ${r.strength}">${bars}</span>` : ''}
         ${!r.evaluable ? `<span class="pill">${esc(t('not_evaluable'))}</span>` : ''}</div>
@@ -425,12 +447,15 @@
 
   // ------------------------------------------------------------------ live layer (intraday, ~15 min)
   const LIVE_SERIES = { usd_egp: 'fx_market', egx30: 'egx30', brent: 'brent_fut', gold: 'xauusd', dxy: 'dxy', vix: 'vix',
-    us10y: 'us10y', wheat: 'wheat', gas_eu: 'ttf_fut', em_eq: 'msci_em_proxy' };
+    us10y: 'us10y', wheat: 'wheat', gas_eu: 'ttf_fut', em_eq: 'msci_em_proxy', cib: 'cib_local', cib_gdr: 'cib_gdr' };
   function timeOnly(iso) { return iso ? iso.slice(11, 16) : ''; }
-  function liveSection() {
+  function liveSection(compact) {
     const L = S.L;
     if (!L) return '';
-    const chips = L.quotes.map((q) => {
+    if (compact === undefined) compact = S.mode === 'simple' && S.route === 'home';
+    const KEY = ['usd_egp', 'egx30', 'brent', 'gold'];
+    const qs = compact ? KEY.map((k) => L.quotes.find((q) => q.id === k)).filter(Boolean) : L.quotes;
+    const chips = qs.map((q) => {
       const dir = Math.sign(q.chg || 0) * (q.sign || 0);
       const cls = dir > 0 ? 'p' : dir < 0 ? 'r' : 'n';
       const arrow = (q.chg || 0) > 0 ? '▲' : (q.chg || 0) < 0 ? '▼' : '■';
@@ -442,12 +467,14 @@
         ${sparkSvg(q.spark)}
         <span class="lq-t"><span class="pill ${q.open ? 'live-on' : ''}">${esc(q.open ? t('open_mkt') : t('closed_mkt'))}</span> <span class="num">${esc(q.open ? timeOnly(q.ts) : fmtDate(q.ts.slice(0, 10)))}</span></span></button>`;
     }).join('');
-    const reads = L.insights.map((i) => {
+    const IMPORTANT = ['gold_gap', 'oil_gap', 'hot_money', 'egx', 'market_gap', 'risk', 'gold_world'];
+    const ins = compact ? [...L.insights].sort((a, b) => IMPORTANT.indexOf(a.id) - IMPORTANT.indexOf(b.id)).slice(0, 3) : L.insights;
+    const reads = ins.map((i) => {
       const cls = i.dir > 0 ? 'p' : i.dir < 0 ? 'r' : 'n';
-      const src = (i.sources || []).map((x) => `<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.name)}</a>${x.at ? ` <span class="num">${esc(timeOnly(x.at))}</span>` : ''}`).join(' · ');
+      const src = (i.sources || []).map((x) => `<a href="${esc(x.url)}" target="_blank" rel="noopener"><bdi>${esc(x.name)}</bdi></a>${x.at ? ` <span class="num">${esc(timeOnly(x.at))}</span>` : ''}`).join(' · ');
       return `<div class="sig ${cls}"><p>${AR() ? bidi(esc(i.ar)) : esc(i.en)}</p><div class="tiny muted" style="margin-top:4px">${src}</div></div>`;
     }).join('');
-    const news = (L.news || []).slice(0, 6).map((n) => `<li><a href="${esc(n.url)}" target="_blank" rel="noopener">${esc(n.title)}</a>
+    const news = (L.news || []).slice(0, compact ? 3 : 6).map((n) => `<li><a dir="auto" href="${esc(n.url)}" target="_blank" rel="noopener">${esc(n.title)}</a>
       <span class="tiny muted">${esc(n.outlet)} · ${esc(ago(n.at))}</span></li>`).join('');
     const cbe = L.cbe ? `<div class="mini"><span class="muted small">${esc(t('cbe_today'))}</span><b class="num">${nf(L.cbe.buy, 4)}</b>
       <span class="tiny muted">${esc(fmtDate(L.cbe.date))} · <a href="${esc(L.cbe.url)}" target="_blank" rel="noopener">CBE ↗</a></span></div>` : '';
@@ -469,12 +496,170 @@
       S.L = L;
       if (old && old.generated !== L.generated) {
         S.liveFlash = new Set(L.quotes.filter((q) => { const o = old.quotes.find((x) => x.id === q.id); return o && o.price !== q.price; }).map((q) => q.id));
-        if (S.route === 'overview') { const el = $('#liveSlot'); if (el) el.innerHTML = liveSection(); }
+        { const el = $('#liveSlot'); if (el) el.innerHTML = liveSection(); }
         setTimeout(() => { S.liveFlash = new Set(); }, 2500);
       }
       S.lastPoll = Date.now();
     } catch (e) { /* live.js not published yet */ }
     updateLive();
+  }
+
+  // ------------------------------------------------------------------ SIMPLE MODE (tutor)
+  const ST = { '-1': ['r', 'helping'], '1': ['p', 'hurting'], '0': ['n', 'steady'], 'null': ['x', 'no_data_short'] };
+  const stOf = (n) => ST[String(n.status)] || ST.null;
+  const L2 = (pair) => (pair ? (AR() ? pair[1] || pair[0] : pair[0]) : '');
+  const nodeById = (id) => (S.D.chain ? S.D.chain.nodes.find((n) => n.id === id) : null);
+
+  function chainCard(n) {
+    const [cls, key] = stOf(n);
+    return `<button class="cn cn-${cls}" data-node="${n.id}">
+      <span class="cn-ic" aria-hidden="true">${n.icon}</span>
+      <span class="cn-body"><span class="cn-t">${esc(L2(n.title))}</span>
+      <span class="cn-v">${bidi(esc(L2(n.value) || '—'))}</span>
+      <span class="cn-s">${cls === 'p' ? '▲' : cls === 'r' ? '▼' : '•'} ${esc(t(key))}</span></span></button>`;
+  }
+  function chainMap() {
+    const C = S.D.chain;
+    if (!C) return '';
+    const row = (id) => C.nodes.filter((n) => n.row === id).map(chainCard).join('');
+    const title = (id) => esc(L2(C.rows.find((r) => r.id === id).title));
+    const arrow = (txt) => `<div class="cn-arrow"><span aria-hidden="true">↓</span>${txt ? `<em>${esc(txt)}</em>` : ''}</div>`;
+    return `<section class="card chain"><h3>${esc(t('chain_title'))}<button class="btn primary" data-tour="start" type="button">▶ ${esc(t('start_tour'))}</button></h3>
+      <p class="small muted" style="margin-top:-4px">${esc(t('chain_hint'))}</p>
+      <div class="cn-row"><div class="cn-label">${title(0)}</div><div class="cn-grid">${row(0)}</div></div>
+      ${arrow(AR() ? 'بتأثر على الدولارات الداخلة والخارجة' : 'shake the flows of dollars')}
+      <div class="cn-two">
+        <div class="cn-row cn-in"><div class="cn-label">⬇ ${title(1)}</div><div class="cn-grid">${row(1)}</div></div>
+        <div class="cn-row cn-out"><div class="cn-label">⬆ ${title(2)}</div><div class="cn-grid">${row(2)}</div></div>
+      </div>
+      ${arrow(AR() ? 'الفرق بينهم بيحدد' : 'the balance between them decides')}
+      <div class="cn-row"><div class="cn-label">${title(3)}</div><div class="cn-grid cn-2">${row(3)}</div></div>
+      ${arrow(AR() ? 'وده بيوصل لـ' : 'which flows into')}
+      <div class="cn-row"><div class="cn-label">${title(4)}</div><div class="cn-grid cn-2">${row(4)}</div></div>
+      ${arrow(AR() ? 'وفي الآخر' : 'and finally')}
+      <div class="cn-row"><div class="cn-label">${title(5)}</div><div class="cn-grid cn-1">${row(5)}</div></div>
+    </section>`;
+  }
+  function lessonsRow(full = false) {
+    const ls = S.D.lessons || [];
+    const card = (l) => `<a class="lesson${S.lessonsDone.has(l.id) ? ' done' : ''}" href="#/learn/${l.id}">
+      <span class="ls-ic" aria-hidden="true">${l.icon}</span><span class="ls-t">${esc(L2(l.title))}</span>
+      <span class="ls-m">${l.minutes} ${esc(t('min_read'))}${S.lessonsDone.has(l.id) ? ' · ✓ ' + esc(t('done')) : ''}</span></a>`;
+    return `<section class="card"><h3>${esc(t('lessons_title'))}<span class="pill">${S.lessonsDone.size}/${ls.length} ✓</span></h3>
+      <p class="small muted" style="margin-top:-4px">${esc(t('lessons_hint'))}</p>
+      <div class="lessons ${full ? 'full' : ''}">${ls.map(card).join('')}</div></section>`;
+  }
+  function bigNumbers() {
+    const fx = S.L && S.L.cbe ? S.L.cbe.buy : (S.D.series.fx_cbe_official || {}).value;
+    const gq = S.D.series.fx_gold_implied || {};
+    const bq = S.L ? (S.L.quotes || []).find((q) => q.id === 'brent') : null;
+    const oil = bq ? bq.price : (S.D.series.brent_fut || {}).value;
+    const big = (label, val, unit, sub) => `<div class="bign"><span class="bn-l">${esc(label)}</span><span class="bn-v num" dir="ltr">${val}</span>
+      <span class="bn-u">${esc(unit)}</span>${sub ? `<span class="bn-s">${sub}</span>` : ''}</div>`;
+    const gap = gq.value && fx ? (gq.value / fx - 1) * 100 : null;
+    return `<div class="bigs">
+      ${big(t('big_dollar'), fx ? nf(fx, 2) : '—', t('pounds'), AR() ? 'السعر الرسمي للبنك المركزي' : 'official CBE rate')}
+      ${big(t('big_gold'), gq.value ? nf(gq.value, 2) : '—', t('pounds'), gap == null ? '' : `<span class="num">${gap > 0 ? '+' : ''}${nf(gap, 1)}%</span> ${AR() ? (Math.abs(gap) < 3 ? '— طبيعي' : '— انتبه') : (Math.abs(gap) < 3 ? '— normal' : '— watch')}`)}
+      ${big(t('big_oil'), oil ? '$' + nf(oil, 0) : '—', t('per_barrel'), AR() ? 'مقابل <span class="num">75</span> دولار في الموازنة' : 'vs $75 in the budget')}
+    </div>`;
+  }
+  function viewHome() {
+    const D = S.D, h = D.headline || {};
+    const [vc] = verdict(D.ppi.value);
+    const changes = D.rules.filter((r) => r.fired && r.direction !== 0).sort((a, b) => b.strength - a.strength).slice(0, 4)
+      .map((r) => `<li class="${r.direction > 0 ? 'p' : 'r'}">${AR() ? bidi(esc(r.ar || r.en)) : esc(r.en)}</li>`).join('');
+    return `<div class="view simple">
+      <section class="hero2 verdict-bg-${vc}">
+        <div class="eyebrow">${esc(fmtDate(D.as_of))} · ${esc(t('ppi'))} <span class="num">${D.ppi.value == null ? '—' : (D.ppi.value > 0 ? '+' : '') + nf(D.ppi.value, 0)}/100</span></div>
+        <h1 class="h2-sent">${esc(AR() ? h.ar : h.en)}</h1>
+        ${(AR() ? h.good_ar : h.good_en) ? `<p class="h2-good">${esc(AR() ? h.good_ar : h.good_en)}</p>` : ''}
+        ${bigNumbers()}
+      </section>
+      ${chainMap()}
+      <div id="liveSlot" class="simple-live">${liveSection()}</div>
+      ${lessonsRow()}
+      ${changes ? `<section class="card"><h3>${esc(t('what_changed'))}</h3><ul class="changes">${changes}</ul></section>` : ''}
+      <p style="text-align:center;margin:22px 0"><button class="btn" type="button" data-mode="pro">⚙ ${esc(t('go_pro'))}</button></p>
+      <p class="disclaimer">${esc(t('disclaimer'))}</p></div>`;
+  }
+  function viewLearn() {
+    return `<div class="view simple"><div class="page-head"><div><h1>${esc(t('lessons_title'))}</h1><p>${esc(t('lessons_hint'))}</p></div></div>
+      ${lessonsRow(true)}${chainMap()}</div>`;
+  }
+  function viewLiveSimple() { return `<div class="view simple"><div id="liveSlot">${liveSection()}</div></div>`; }
+
+  // node tutor card (opens in the side panel); in tour mode it shows Back/Next
+  function openNode(id) {
+    const n = nodeById(id);
+    if (!n) return;
+    const C = S.D.chain;
+    const [cls, key] = stOf(n);
+    const out = C.edges.filter((e) => e.from === id), inn = C.edges.filter((e) => e.to === id);
+    const chip = (nid, label, dir) => { const m = nodeById(nid); if (!m) return ''; const [c2] = stOf(m);
+      return `<button class="ch-chip cn-${c2}" data-node="${nid}">${dir === 'out' ? '→' : '←'} ${esc(L2(m.title))} <em>${esc(L2(label))}</em></button>`; };
+    const srcs = (n.sources || []).map((x) => x.url ? `<a href="${esc(x.url)}" target="_blank" rel="noopener"><bdi>${esc(x.name)}</bdi></a> <span class="num">${esc(x.date || '')}</span>` : esc(x.name)).join(' · ');
+    const nums = (n.series || []).filter((sid) => S.D.series[sid]).map((sid) => { const sr = S.D.series[sid];
+      return `<button class="mini-tile" data-series="${sid}"><span>${esc(nm(sr))}</span><b class="num">${sr.empty ? '—' : valueHtml(sr)}</b></button>`; }).join('');
+    let tourBar = '';
+    if (S.tour) {
+      const i = S.tour.i, N = C.tour.length;
+      tourBar = `<div class="tourbar"><span class="small muted">${esc(t('tour_title'))} · ${esc(t('step_of'))} ${i + 1} ${esc(t('of'))} ${N}</span>
+        <div class="tour-dots">${C.tour.map((_, k) => `<i class="${k === i ? 'on' : k < i ? 'past' : ''}"></i>`).join('')}</div>
+        <div style="display:flex;gap:8px"><button class="btn" data-tour="back" ${i === 0 ? 'disabled' : ''}>${esc(t('back'))}</button>
+        <button class="btn primary" data-tour="${i === N - 1 ? 'end' : 'next'}">${esc(i === N - 1 ? t('finish') : t('next'))} →</button></div></div>`;
+    }
+    $('#drawerBody').innerHTML = `${tourBar}
+      <div class="node-head cn-${cls}"><span class="cn-ic big" aria-hidden="true">${n.icon}</span><div>
+        <h2 class="d-title" id="drawerTitle">${esc(L2(n.title))}</h2>
+        <div><span class="pill ${cls === 'p' ? 'p' : cls === 'r' ? 'r' : ''}">${esc(t(key))}</span> <b style="margin-inline-start:6px">${bidi(esc(L2(n.value) || ''))}</b></div></div></div>
+      <div class="tutor">
+        <div class="tu"><b>${esc(t('in_one_line'))}</b><p>${esc(L2(n.one))}</p></div>
+        <div class="tu tu-now"><b>${esc(t('right_now_t'))}</b><p>${AR() ? bidi(esc(L2(n.now))) : esc(L2(n.now)) || '—'}</p>${srcs ? `<div class="tiny muted">${esc(t('source'))}: ${srcs}</div>` : ''}</div>
+        <div class="tu"><b>${esc(t('why_matters'))}</b><p>${esc(L2(n.why))}</p></div>
+        <div class="tu"><b>${esc(t('what_next'))}</b><p>${esc(L2(n.next))}</p></div>
+        ${out.length ? `<div class="tu"><b>${esc(t('affects'))}</b><div class="chips2">${out.map((e) => chip(e.to, e.label, 'out')).join('')}</div></div>` : ''}
+        ${inn.length ? `<div class="tu"><b>${esc(t('caused_by'))}</b><div class="chips2">${inn.map((e) => chip(e.from, e.label, 'in')).join('')}</div></div>` : ''}
+        ${nums ? `<div class="tu"><b>${esc(t('see_numbers'))}</b><div class="mini-tiles">${nums}</div></div>` : ''}
+      </div>`;
+    const dr = $('#drawer'); dr.classList.add('open'); dr.setAttribute('aria-hidden', 'false');
+    $('#drawer .drawer-panel').scrollTop = 0;
+  }
+  function tourGo(i) {
+    const T = S.D.chain.tour;
+    if (i < 0 || i >= T.length) { S.tour = null; closeDrawer(); return; }
+    S.tour = { i };
+    openNode(T[i]);
+  }
+
+  // lessons reader
+  function viewLesson(id) {
+    const l = (S.D.lessons || []).find((x) => x.id === id);
+    if (!l) return viewLearn();
+    const st = S.lesson && S.lesson.id === id ? S.lesson : (S.lesson = { id, i: 0, picked: null });
+    const N = l.steps.length;
+    const dots = Array.from({ length: N + 1 }, (_, k) => `<i class="${k === st.i ? 'on' : k < st.i ? 'past' : ''}"></i>`).join('');
+    let body;
+    if (st.i < N) {
+      body = `<p class="lesson-step">${AR() ? bidi(esc(L2(l.steps[st.i]))) : esc(L2(l.steps[st.i]))}</p>`;
+    } else {
+      const q = l.quiz;
+      const opts = q.options.map((o, k) => {
+        let cls = '';
+        if (st.picked != null) cls = k === q.answer ? 'right' : (k === st.picked ? 'wrong' : '');
+        return `<button class="qopt ${cls}" data-quiz="${k}" ${st.picked != null ? 'disabled' : ''}>${esc(L2(o))}</button>`;
+      }).join('');
+      const fb = st.picked == null ? '' : `<p class="qfb ${st.picked === q.answer ? 'right' : 'wrong'}"><b>${esc(st.picked === q.answer ? t('correct') : t('not_quite'))}</b> ${esc(L2(q.why))}</p>`;
+      body = `<div class="small muted">${esc(t('quiz'))}</div><p class="lesson-step">${esc(L2(q.q))}</p><div class="qopts">${opts}</div>${fb}`;
+    }
+    const rel = (l.nodes || []).map((nid) => { const m = nodeById(nid); return m ? `<button class="ch-chip cn-${stOf(m)[0]}" data-node="${nid}">${m.icon} ${esc(L2(m.title))}</button>` : ''; }).join('');
+    const last = st.i === N;
+    return `<div class="view simple"><p><a href="#/learn">← ${esc(t('lessons_title'))}</a></p>
+      <section class="card lesson-card"><div class="ls-head"><span class="ls-ic big" aria-hidden="true">${l.icon}</span><h1>${esc(L2(l.title))}</h1></div>
+        <div class="tour-dots">${dots}</div>${body}
+        <div class="lesson-nav"><button class="btn" data-lstep="back" ${st.i === 0 ? 'disabled' : ''}>${esc(t('back'))}</button>
+          ${last ? (st.picked != null ? `<a class="btn primary" href="#/learn">${esc(t('finish'))} ✓</a>` : '') : `<button class="btn primary" data-lstep="next">${esc(t('next'))} →</button>`}</div>
+      </section>
+      ${rel ? `<section class="card"><h3>${esc(t('related_boxes'))}</h3><div class="chips2">${rel}</div></section>` : ''}</div>`;
   }
 
   // ------------------------------------------------------------------ views
@@ -483,7 +668,7 @@
     const p = D.ppi;
     const [vc, vtxt] = verdict(p.value);
     const subs = D.subindices.map((s) => `<button class="sub" data-route="d/${SUB_TO_DOMAIN[s.id]}" title="${esc(t('coverage'))} ${s.coverage_pct}%">
-        <span class="nm">${esc(AR() ? s.name_ar : s.name_en)}<small class="num">${s.weight}%</small></span>${dbar(s.value)}
+        <span class="nm">${esc(AR() ? s.name_ar : s.name_en)} <small class="num">${s.weight}%</small></span>${dbar(s.value)}
         <span class="val num">${s.value == null ? '—' : (s.value > 0 ? '+' : '') + Math.round(s.value)}<small>${Math.round(s.coverage_pct)}%</small></span></button>`).join('');
     const extra = D.extra.map((x) => `<div class="sub" style="cursor:default"><span class="nm">${esc(t(x.id === 'inflation' ? 'inflation_idx' : 'growth_idx'))}</span>
         ${dbar(x.value, '--s2', '--s3')}<span class="val num">${x.value == null ? '—' : (x.value > 0 ? '+' : '') + Math.round(x.value)}<small>${Math.round(x.coverage_pct)}%</small></span></div>`).join('');
@@ -532,7 +717,7 @@
       f === 'relief' ? r.fired && r.direction < 0 : f === 'notes' ? r.fired && r.direction === 0 : f === 'ne' ? !r.evaluable : true);
     const counts = { fired: S.D.rules.filter((r) => r.fired).length, ne: S.D.rules.filter((r) => !r.evaluable).length, all: S.D.rules.length };
     const chip = (k, label, n) => `<button class="chip" data-sig="${k}" aria-pressed="${f === k}">${esc(label)}${n != null ? ` · ${n}` : ''}</button>`;
-    const q = S.D.queue.map((e) => `<div class="ev"><div class="d num">${esc(e.event_date)}</div><div class="t"><a href="${esc(e.source_url)}" target="_blank" rel="noopener">${esc(e.title_en)}</a>
+    const q = S.D.queue.map((e) => `<div class="ev"><div class="d num">${esc(e.event_date)}</div><div class="t"><a dir="auto" href="${esc(e.source_url)}" target="_blank" rel="noopener">${esc(e.title_en)}</a>
       <small>${esc(e.event_type)} · ${esc(e.source_name)}</small></div><span class="pill">${e.n_outlets} ${AR() ? 'مصدر' : 'outlet' + (e.n_outlets === 1 ? '' : 's')}</span></div>`).join('');
     return `<div class="view"><div class="page-head"><div><h1>${esc(t('signals'))}</h1><p>${esc(t('tool_default'))}</p></div></div>
       <div class="chips">${chip('fired', t('fired'), counts.fired)}${chip('pressure', t('pressure_word'))}${chip('relief', t('relief_word'))}${chip('notes', t('notes'))}${chip('ne', t('not_evaluable'), counts.ne)}${chip('all', t('all'), counts.all)}</div>
@@ -544,7 +729,7 @@
   function evItem(e) {
     const color = e.direction > 0 ? 'var(--pressure)' : e.direction < 0 ? 'var(--relief)' : 'var(--sand)';
     return `<div class="ev"><div class="d num">${esc(fmtDate(e.event_date))}</div>
-      <div class="t">${esc(AR() ? e.title_ar || e.title_en : e.title_en)}<small>${esc(e.event_type)} · ${esc(e.confidence)}${e.direction === 0 ? ' · ' + esc(t('tag_only')) : ''} · <a href="${esc(e.source_url)}" target="_blank" rel="noopener">${esc(e.source_name)}</a></small></div>
+      <div class="t"><span dir="auto">${esc(AR() ? e.title_ar || e.title_en : e.title_en)}</span><small>${esc(e.event_type)} · ${esc(e.confidence)}${e.direction === 0 ? ' · ' + esc(t('tag_only')) : ''} · <a href="${esc(e.source_url)}" target="_blank" rel="noopener">${esc(e.source_name)}</a></small></div>
       <div title="${esc(t('weight_left'))} ${Math.round(e.weight_left * 100)}%"><div class="decay"><span style="width:${Math.round(e.weight_left * 100)}%;background:${color}"></span></div>
       <div class="tiny muted num" style="text-align:end">${e.score > 0 ? '+' : ''}${nf(e.score, 2)}</div></div></div>`;
   }
@@ -554,7 +739,7 @@
     const today = S.D.as_of;
     const dayLabel = c.event_date === today ? t('today') : fmtDate(c.event_date);
     return `<div class="cal-item"><div class="when">${esc(dayLabel)}<small class="num">${esc(c.event_time_cairo || '')}</small></div>
-      <div><a href="${esc(c.source_url)}" target="_blank" rel="noopener">${esc(c.description)}</a> <span class="pill">${esc(c.status)}</span></div>
+      <div><a dir="auto" href="${esc(c.source_url)}" target="_blank" rel="noopener">${esc(c.description)}</a> <span class="pill">${esc(c.status)}</span></div>
       ${cd ? `<span class="countdown">${esc(cd)}</span>` : '<span></span>'}</div>`;
   }
   function viewCalendar() {
@@ -606,6 +791,10 @@
         <section class="card"><h3>${esc(t('updated'))}</h3><div class="gauge-val" style="font-size:22px">${esc(ago(S.D.generated))}</div><div class="small muted num">${esc(S.D.generated.replace('T', ' ').slice(0, 16))} (Cairo)</div></section>
       </div>
       <section class="card" style="margin-top:12px"><h3>${esc(t('ppi_history'))}</h3><div class="chart tall" dir="ltr" id="ch_ppihist"></div><div class="cap">${esc(t('backtest_note'))}</div></section>
+      ${S.D.audit ? `<h2 class="sec">${esc(AR() ? 'مراجعة جودة البيانات' : 'Data audit (economist checks)')}
+        <span class="pill">${S.D.audit.counts.pass} ✓ · ${S.D.audit.counts.warn} ! · ${S.D.audit.counts.fail} ✕</span></h2>
+        <div class="card tblwrap"><table class="tbl">${S.D.audit.checks.map((c) => `<tr><td><span class="pill ${c.status === 'pass' ? '' : c.status === 'warn' ? 'warn' : 'crit'}">${c.status === 'pass' ? '✓ pass' : c.status === 'warn' ? '! watch' : '✕ fail'}</span></td>
+        <td><b>${esc(c.check)}</b><div class="small muted">${esc(c.detail)}</div></td></tr>`).join('')}</table></div>` : ''}
       <h2 class="sec">${esc(t('sources_title'))}</h2><div class="card tblwrap"><table class="tbl"><tr><th>collector</th><th>${esc(t('status'))}</th><th>time</th><th>${esc(t('rows'))}</th><th>${esc(t('error'))}</th></tr>${src}</table></div>
       <h2 class="sec">${esc(t('all_series'))}</h2><input class="btn" style="width:100%;height:40px;margin-bottom:10px" id="dataFilter" placeholder="${esc(t('filter_series'))}" value="${esc(S.dataFilter)}">
       <div class="card tblwrap"><table class="tbl"><tr><th>${esc(t('all_series'))}</th><th>value</th><th>${esc(t('observed'))}</th><th>${esc(t('status'))}</th><th>${esc(t('source'))}</th></tr>${rows}</table></div></div>`;
@@ -630,19 +819,19 @@
     const dr = $('#drawer');
     const body = $('#drawerBody');
     const ch = changeInfo(s);
-    body.innerHTML = `<h2 class="d-title" id="drawerTitle">${esc(nm(s))}</h2><p class="d-sub">${esc(AR() ? s.name_en : s.name_ar)} · <code>${esc(s.id)}</code></p>
+    body.innerHTML = `<h2 class="d-title" id="drawerTitle">${esc(nm(s))}</h2><p class="d-sub"><bdi>${esc(AR() ? s.name_en : s.name_ar)}</bdi> · <code>${esc(s.id)}</code></p>
       <div class="d-big"><span class="v">${s.empty ? esc(t('no_data')) : valueHtml(s)}</span>
         ${ch ? `<span class="t-chg ${ch.cls}" style="font-size:15px">${ch.arrow} <span class="num">${esc(ch.txt)}</span> ${esc(t('vs'))} <span class="num">${esc(fmtObs(s.prev_date, s.freq))}</span> ${ch.word ? '· ' + esc(ch.word) : ''}</span>` : ''}
         ${s.empty ? '' : badges(s)}</div>
       ${explainPanel(s)}
       <div class="card" style="margin-top:12px"><h3>${esc(t('history'))}<span id="dRange"></span></h3><div class="chart" dir="ltr" id="dChart"><div class="muted small">…</div></div></div>
       <div class="facts">
-        <div class="fact"><b>${esc(t('source'))}</b>${s.url ? `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.source)} ↗</a>` : esc(s.source || s.access)}</div>
+        <div class="fact"><b>${esc(t('source'))}</b>${s.url ? `<a dir="auto" href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.source)} ↗</a>` : `<bdi>${esc(s.source || s.access)}</bdi>`}</div>
         <div class="fact"><b>${esc(t('observed'))} / ${esc(t('released'))}</b><span class="num">${esc(s.date || '—')}${s.obs_time ? ' ' + esc(s.obs_time.slice(11, 16)) : ''} / ${esc(s.release || '—')}</span></div>
-        <div class="fact"><b>${esc(t('quality'))}</b>${esc(s.quality || '—')} · ${esc(s.access)}</div>
-        <div class="fact"><b>${esc(t('frequency'))} · ${esc(t('unit'))}</b>${esc(s.freq)} · ${esc(s.unit || '—')}</div>
-        ${s.definition ? `<div class="fact" style="grid-column:1/-1"><b>${esc(t('definition'))}</b>${esc(s.definition)}</div>` : ''}
-        ${s.note ? `<div class="fact" style="grid-column:1/-1"><b>note</b>${esc(s.note)}</div>` : ''}
+        <div class="fact"><b>${esc(t('quality'))}</b>${esc(meta(s.quality || '—'))} · ${esc(meta(s.access))}</div>
+        <div class="fact"><b>${esc(t('frequency'))} · ${esc(t('unit'))}</b>${esc(meta(s.freq))} · <bdi>${esc(s.unit || '—')}</bdi></div>
+        ${s.definition ? `<div class="fact" style="grid-column:1/-1"><b>${esc(t('definition'))}</b><span dir="auto">${esc(s.definition)}</span></div>` : ''}
+        ${s.note ? `<div class="fact" style="grid-column:1/-1"><b>${esc(AR() ? 'ملاحظة' : 'note')}</b><span dir="auto">${esc(s.note)}</span></div>` : ''}
       </div>
       <h3 style="display:flex;justify-content:space-between;align-items:center">${esc(t('latest_obs'))}<button class="btn" id="dCsv" type="button">⇩ ${esc(t('download_csv'))}</button></h3>
       <div class="tblwrap" id="dTable"></div>`;
@@ -678,6 +867,7 @@
   }
   function closeDrawer() {
     const dr = $('#drawer'); if (!dr.classList.contains('open')) return;
+    S.tour = null;
     dr.classList.remove('open'); dr.setAttribute('aria-hidden', 'true');
     if (location.hash.startsWith('#/s/')) history.replaceState(null, '', '#/' + S.route);
   }
@@ -716,6 +906,14 @@
       ['signals', 'ϟ', t('signals')], ['calendar', '▦', t('calendar')], ['brief', 'ع', t('brief')], ['data', '≡', t('data')]];
   }
   function renderNav() {
+    $$('[data-mode-btn]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.modeBtn === S.mode)));
+    $('#explainBtn').hidden = S.mode === 'simple';
+    if (S.mode === 'simple') {
+      const items = [['home', '◉', t('home')], ['learn', '✎', t('learn_tab')], ['live', '●', t('live_tab')], ['brief', 'ع', t('brief')]];
+      $('#tabs').innerHTML = items.map(([r, ic, l]) => `<button class="tab" type="button" data-route="${r}" ${S.route === r || (r === 'learn' && S.route.startsWith('learn')) ? 'aria-current="page"' : ''}><span aria-hidden="true">${ic}</span>${esc(l)}</button>`).join('');
+      $('#bottombar').innerHTML = [...items, ['__search', '⌕', t('search')]].map(([r, ic, l]) => `<button type="button" data-route="${r}" ${S.route === r ? 'aria-current="page"' : ''}><span aria-hidden="true">${ic}</span><span>${esc(l)}</span></button>`).join('');
+      return;
+    }
     const fired = S.D.rules.filter((r) => r.fired && r.direction > 0).length;
     $('#tabs').innerHTML = navItems().map(([r, ic, l]) => `<button class="tab" type="button" data-route="${r}" ${S.route === r ? 'aria-current="page"' : ''}>
       <span aria-hidden="true">${ic}</span>${esc(l)}${r === 'signals' && fired ? `<span class="count">${fired}</span>` : ''}</button>`).join('');
@@ -728,15 +926,19 @@
   function go(route) { if (route === '__search') return openPalette(); location.hash = '#/' + route; }
   function routeFromHash() {
     const h = location.hash.replace(/^#\/?/, '');
-    if (h.startsWith('s/')) { if (!S.route) S.route = 'overview'; return { route: S.route || 'overview', series: decodeURIComponent(h.slice(2)) }; }
-    return { route: h || 'overview' };
+    if (h.startsWith('s/') || h.startsWith('n/')) { if (!S.route) S.route = S.mode === 'simple' ? 'home' : 'overview'; return { route: S.route || 'overview', series: decodeURIComponent(h.slice(2)) }; }
+    return { route: h || (S.mode === 'simple' ? 'home' : 'overview') };
   }
   function render(keepScroll = false) {
     if (!S.D) return;
     const y = window.scrollY;
     const r = S.route;
     let html;
-    if (r === 'overview') html = viewOverview();
+    if (r === 'home') html = viewHome();
+    else if (r === 'learn') html = viewLearn();
+    else if (r.startsWith('learn/')) html = viewLesson(r.slice(6));
+    else if (r === 'live') html = viewLiveSimple();
+    else if (r === 'overview') html = viewOverview();
     else if (r.startsWith('d/')) html = viewDomain(r.slice(2));
     else if (r === 'signals') html = viewSignals();
     else if (r === 'calendar') html = viewCalendar();
@@ -753,6 +955,7 @@
   }
   function onHash() {
     const { route, series } = routeFromHash();
+    if (route.startsWith('learn/') && (!S.lesson || S.lesson.id !== route.slice(6))) S.lesson = null;
     if (route !== S.route || !$('#main .view')) { S.route = route; render(); }
     if (series) openSeries(series); else closeDrawer();
   }
@@ -761,11 +964,18 @@
   function applyI18nStatic() {
     $$('[data-i18n]').forEach((el) => { el.textContent = t(el.dataset.i18n); });
     $$('.seg [data-lang]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.lang === S.lang)));
+    $$('[data-mode-btn]').forEach((b) => { b.textContent = t(b.dataset.modeBtn); b.setAttribute('aria-pressed', String(b.dataset.modeBtn === S.mode)); });
     const icons = { auto: '◐', light: '☀', dark: '☾' };
     $('#themeBtn').textContent = icons[S.theme] || '◐';
     $('#themeBtn').title = `theme: ${S.theme}`;
     $('#explainBtn').setAttribute('aria-pressed', String(S.explain));
     updateLive();
+  }
+  function setMode(m) {
+    S.mode = m === 'pro' ? 'pro' : 'simple'; store('pulse.mode', S.mode);
+    S.tour = null; closeDrawer();
+    location.hash = '#/' + (S.mode === 'simple' ? 'home' : 'overview');
+    render();
   }
   function setLang(l) {
     S.lang = l; store('pulse.lang', l);
@@ -852,6 +1062,18 @@
   // ------------------------------------------------------------------ events
   function bind() {
     document.addEventListener('click', (e) => {
+      const nEl = e.target.closest('[data-node]');
+      if (nEl) { e.preventDefault(); if (S.tour && !e.target.closest('.tourbar')) S.tour = null; openNode(nEl.dataset.node); return; }
+      const tr = e.target.closest('[data-tour]');
+      if (tr) { e.preventDefault(); const a = tr.dataset.tour;
+        if (a === 'start') tourGo(0); else if (a === 'next') tourGo(S.tour.i + 1); else if (a === 'back') tourGo(S.tour.i - 1); else { S.tour = null; closeDrawer(); }
+        return; }
+      const ls = e.target.closest('[data-lstep]');
+      if (ls && S.lesson) { S.lesson.i += ls.dataset.lstep === 'next' ? 1 : -1; S.lesson.i = Math.max(0, S.lesson.i); render(true); return; }
+      const qz = e.target.closest('[data-quiz]');
+      if (qz && S.lesson) { S.lesson.picked = +qz.dataset.quiz; S.lessonsDone.add(S.lesson.id); store('pulse.lessons', [...S.lessonsDone].join(',')); render(true); return; }
+      const md = e.target.closest('[data-mode], [data-mode-btn]');
+      if (md) { e.preventDefault(); setMode(md.dataset.mode || md.dataset.modeBtn); return; }
       const tEl = e.target.closest('[data-series]');
       if (tEl) { e.preventDefault(); location.hash = '#/s/' + tEl.dataset.series; return; }
       const r = e.target.closest('[data-route]');
@@ -892,7 +1114,7 @@
     await detectServer();
     updateLive();
     await pollLive(false);
-    if (S.route === 'overview') { const el = $('#liveSlot'); if (el) el.innerHTML = liveSection(); }
+    { const el = $('#liveSlot'); if (el) el.innerHTML = liveSection(); }
     setInterval(poll, 60 * 1000);
     setInterval(() => pollLive(true), 60 * 1000);
     setInterval(updateLive, 30 * 1000);

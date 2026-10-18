@@ -28,6 +28,8 @@ QUOTES = [  # id, yahoo symbol, EN name, AR name, unit, sign (+1 rise = pressure
     ("wheat", "ZW=F", "Wheat", "القمح", "¢/bu", 1, 1),
     ("gas_eu", "TTF=F", "European gas (TTF)", "الغاز الأوروبي", "€/MWh", 1, 2),
     ("em_eq", "EEM", "Emerging-market stocks (EEM)", "أسهم الأسواق الناشئة", "$", -1, 2),
+    ("cib", "COMI.CA", "CIB (Cairo)", "التجاري الدولي (القاهرة)", "EGP", 0, 2),
+    ("cib_gdr", "CBKD.IL", "CIB GDR (London)", "التجاري الدولي (لندن)", "$", 0, 3),
 ]
 YAHOO_URL = "https://finance.yahoo.com/quote/{}"
 SPARK_POINTS = 60
@@ -212,6 +214,20 @@ def insights(quotes: list[dict], gold: dict | None, cbe: dict | None, v: DataVie
             f"مزاج الأسواق العالمية: مؤشر الخوف {vx['price']:.1f}، " + ("المستثمرين خايفين والفلوس بتخرج من الأسواق الناشئة." if risk_off
                                                                       else "الأسواق هادية."),
             [{"name": vx["source"], "url": vx["url"], "at": vx["ts"]}] + ([{"name": dx["source"], "url": dx["url"], "at": dx["ts"]}] if dx else []))
+    cl, cg = _q(quotes, "cib"), _q(quotes, "cib_gdr")
+    if cl and cg and off and cg["price"]:
+        imp = cl["price"] / cg["price"]
+        prem = gap_pct(imp, off)
+        hist = v.series("cib_gdr_premium_pct")
+        base = float(hist.iloc[-60:].mean()) if len(hist) >= 20 else None
+        dev = None if base is None else prem - base
+        d = 1 if (dev is not None and dev > 3) else (-1 if (dev is not None and dev < -3) else 0)
+        btxt = f" Its recent average is {base:+.1f}%, so today's reading is {dev:+.1f} pp from normal." if base is not None else ""
+        add("hot_money", d, f"Hot-money gauge: CIB in Cairo ÷ CIB in London implies {imp:.2f} EGP/$ — {prem:+.1f}% vs official.{btxt} "
+            "A widening gap means foreign investors price a weaker pound.",
+            f"مؤشر الأموال الساخنة: سعر سهم التجاري الدولي في القاهرة على سعره في لندن بيدي دولار بـ {imp:.2f} جنيه، "
+            f"يعني فرق {prem:+.1f}% عن الرسمي. لو الفرق بيوسع يبقى الأجانب متوقعين ضعف الجنيه.",
+            [{"name": cl["source"], "url": cl["url"], "at": cl["ts"]}, {"name": cg["source"], "url": cg["url"], "at": cg["ts"]}])
     gw = _q(quotes, "gold")
     if gw and gw.get("chg_pct") is not None and abs(gw["chg_pct"]) >= 0.5:
         add("gold_world", 0, f"World gold {gw['chg_pct']:+.2f}% {_when(gw)} (${gw['price']:,.0f}) — moves local gold prices and the value of the CBE's gold reserves.",

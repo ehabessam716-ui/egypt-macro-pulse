@@ -92,6 +92,8 @@ def analyse(conn, brief: bool = True, weekly: bool = False, backtest: bool = Fal
     step("export", export_powerbi, conn)
     from .manual import seed_verification
     step("seeds", seed_verification, conn)
+    from .audit import run_audit
+    step("audit", run_audit, conn)
     conn.commit()
 
 
@@ -109,6 +111,7 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("analyse", help="derive → rules → indices → brief → dashboard → export")
     for name in ("derive", "rules", "indices", "backtest", "dashboard", "brief", "weekly", "export", "calendar"):
         sub.add_parser(name)
+    sub.add_parser("audit", help="economist-style data audit -> reports/data_audit.md")
     lv = sub.add_parser("live", help="refresh intraday quotes + live insights (site/data/live.js)")
     lv.add_argument("--prev", help="previously published live.js (URL or file) to keep intraday history")
     sv = sub.add_parser("serve", help="open the app at http://localhost:8765 (live updates + Update-now button)")
@@ -133,6 +136,12 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if a.cmd == "init":
             init(conn)
+        elif a.cmd == "audit":
+            from .audit import run_audit
+            r = run_audit(conn)
+            print(r["counts"])
+            for c in r["checks"]:
+                print(f"  [{c['status'].upper():4}] {c['check']}: {c['detail'][:160]}")
         elif a.cmd == "live":
             from .live import write_live
             print(write_live(conn, a.prev))

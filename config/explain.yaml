@@ -834,6 +834,64 @@ series:
     down: ["Slower implied growth.", "نمو متوقع أبطأ."]
     related: [pmi]
 
+  egx30_usd:
+    what: ["The EGX30 stock index measured in US dollars — what a foreign investor's Egyptian shares are worth to them.", "مؤشر البورصة محسوب بالدولار، يعني الأسهم المصرية تسوى كام بالنسبة للمستثمر الأجنبي."]
+    drivers: ["Share prices and the pound: if the pound weakens, foreigners lose even when prices in pounds rise.", "أسعار الأسهم والجنيه: لو الجنيه ضعف الأجنبي بيخسر حتى لو الأسعار بالجنيه زادت."]
+    up: ["Foreign investors are making money — more likely to stay or bring more dollars.", "الأجانب بيكسبوا، فغالبا هيفضلوا أو يدخلوا دولارات أكتر."]
+    down: ["Foreign investors are losing in dollars — a reason to sell and take dollars out.", "الأجانب بيخسروا بالدولار، وده سبب يبيعوا ويطلعوا دولارات."]
+    related: [egx30, fx_cbe_official, cib_gdr_premium_pct]
+  cib_local:
+    what: ["Price of Commercial International Bank (CIB) shares in Cairo — Egypt's biggest private bank and the stock foreigners trade most.", "سعر سهم البنك التجاري الدولي في البورصة المصرية، وده أكبر بنك خاص والسهم اللي الأجانب بيتعاملوا عليه أكتر."]
+    drivers: ["Bank profits, interest rates and foreign buying or selling.", "أرباح البنك والفايدة وشراء أو بيع الأجانب."]
+    up: ["Usually confidence and inflows.", "غالبا ثقة وأموال داخلة."]
+    down: ["Often foreign selling.", "غالبا بيع أجانب."]
+    related: [cib_gdr, cib_gdr_premium_pct, egx30]
+  cib_gdr:
+    what: ["Price in US dollars of CIB shares traded in London (GDRs). One GDR equals one Cairo share.", "سعر سهم التجاري الدولي في لندن بالدولار، وكل شهادة تساوي سهم في القاهرة."]
+    drivers: ["The same bank, priced by international investors in dollars.", "نفس البنك بس المستثمرين الدوليين بيسعروه بالدولار."]
+    up: ["International demand for Egyptian assets.", "طلب دولي على الأصول المصرية."]
+    down: ["International investors are less keen.", "المستثمرين الدوليين أقل حماس."]
+    related: [cib_local, cib_gdr_premium_pct]
+  cib_gdr_implied_fx:
+    what: ["The dollar rate you get by dividing CIB's Cairo price (pounds) by its London price (dollars). Because it is the same share, the result is the exchange rate foreign investors are effectively using.", "سعر الدولار اللي بيطلع لما تقسم سعر سهم التجاري الدولي في القاهرة بالجنيه على سعره في لندن بالدولار. لأنه نفس السهم، الناتج هو سعر الدولار اللي الأجانب فعليا بيستخدموه."]
+    drivers: ["Foreign investors' view of the pound, plus limits on converting London shares into Cairo shares.", "نظرة الأجانب للجنيه، وكمان القيود على تحويل الشهادات لأسهم في القاهرة."]
+    up: ["Above the official rate means foreigners value the pound less than the CBE does.", "لو أعلى من الرسمي يبقى الأجانب شايفين الجنيه أضعف من البنك المركزي."]
+    down: ["Close to the official rate means foreigners trust it.", "لو قريب من الرسمي يبقى الأجانب مصدقينه."]
+    related: [cib_local, cib_gdr, fx_cbe_official]
+  cib_gdr_premium_pct:
+    basis: level
+    pivot: 3
+    what: ["How far the CIB London-implied dollar rate is above (+) the official rate, in %. A classic Egypt 'hot money' gauge. Watch the change: part of the gap can be structural (in 2024–25 it sat around 15% because converting London shares was restricted).", "الفرق بين دولار سهم التجاري الدولي والدولار الرسمي بالنسبة المئوية، وده مؤشر قديم للأموال الساخنة في مصر. ركز على التغير، لأن جزء من الفرق ممكن يكون ثابت بسبب قيود التحويل زي اللي حصل في 2024 و2025."]
+    drivers: ["Foreign investors' devaluation fears and GDR conversion rules.", "خوف الأجانب من التخفيض وقواعد تحويل الشهادات."]
+    up: ["A widening gap = foreign money pricing a weaker pound (before the March 2024 devaluation it exceeded 100%).", "الفرق لما يوسع يبقى الأجانب متوقعين ضعف الجنيه، وقبل تخفيض مارس 2024 كان فوق 100%."]
+    down: ["A narrowing gap = confidence in the official rate.", "الفرق لما يضيق يبقى فيه ثقة في السعر الرسمي."]
+    related: [cib_gdr_implied_fx, fx_cbe_official, egx30_usd]
+  efg_hermes:
+    what: ["Share price of EFG Holding, Egypt's largest investment bank — sensitive to foreign portfolio flows.", "سعر سهم إي إف جي القابضة، أكبر بنك استثمار في مصر، وبيتأثر جامد بحركة الأموال الأجنبية."]
+    drivers: ["Market volumes and foreign activity.", "أحجام التداول ونشاط الأجانب."]
+    up: ["Active, confident market.", "سوق نشط وواثق."]
+    down: ["Thinner activity or outflows.", "نشاط أقل أو خروج أموال."]
+    related: [egx30]
+  tmg_stock:
+    what: ["Share price of Talaat Moustafa Group, Egypt's biggest property developer. Egyptians buy property (and property shares) to protect savings from devaluation.", "سعر سهم مجموعة طلعت مصطفى، أكبر شركة عقارات. المصريين بيشتروا عقارات وأسهم عقارية يحموا فلوسهم من التخفيض."]
+    drivers: ["Devaluation fears, Gulf investment and interest rates.", "الخوف من التخفيض والاستثمار الخليجي والفايدة."]
+    up: ["Can signal hedging against a weaker pound — compare with the dollar rate.", "ممكن يكون تحوط من ضعف الجنيه، قارنه بسعر الدولار."]
+    down: ["Less hedging demand or higher rates.", "تحوط أقل أو فايدة أعلى."]
+    related: [egx30, fx_cbe_official]
+  etel_stock:
+    what: ["Share price of Telecom Egypt — a large, defensive state-controlled company.", "سعر سهم المصرية للاتصالات، شركة كبيرة ودفاعية."]
+    drivers: ["Earnings, dividends and market mood.", "الأرباح والتوزيعات ومزاج السوق."]
+    up: ["Market confidence.", "ثقة في السوق."]
+    down: ["Market caution.", "حذر في السوق."]
+    related: [egx30]
+
+  brent_spot_premium_pct:
+    what: ["How much more physical oil for prompt delivery (dated Brent, EIA) costs than the benchmark futures contract, in %.", "البترول الفوري اللي بيتسلم على طول أغلى قد إيه من سعر العقود الآجلة المرجعية."]
+    drivers: ["Physical shortages right now — tanker disruptions, blocked routes (Hormuz, Red Sea), refinery demand.", "نقص البترول دلوقتي بسبب تعطل الناقلات أو قفل الطرق زي هرمز والبحر الأحمر."]
+    up: ["A wide premium means real barrels are scarce today — importers like Egypt may pay well above the headline price.", "العلاوة الكبيرة معناها البراميل الحقيقية نادرة، ومصر ممكن تدفع أكتر من السعر المعلن."]
+    down: ["Supply easing back to normal.", "الإمدادات بترجع طبيعية."]
+    related: [brent, brent_fut, hormuz_ratio_7dma]
+
 patterns:
   - match: "^fx_chg_"
     basis: level

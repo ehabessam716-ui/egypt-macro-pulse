@@ -27,6 +27,10 @@ DOMAINS = [
     ("fx", "The pound & markets", "الجنيه والبورصة", ["fx_cbe_official", "egx30", "egx70", "fx_market", "fx_gold_implied", "gold_gap_pct", "fx_chg_20d", "fx_chg_3m",
                                     "fx_vol_20d", "fx_market_gap_pct", "tbill_3m_yield", "tbill_12m_yield", "tbill_12m_btc",
                                     "tbill_12m_accepted_ratio", "carry_ex_post_3m", "fx_parallel", "eurobond_yield", "cds_5y"]),
+    ("hot", "Hot money & stocks", "الأموال الساخنة والبورصة",
+     ["egx30", "egx30_usd", "egx70", "cib_gdr_premium_pct", "cib_gdr_implied_fx", "cib_local", "cib_gdr", "efg_hermes",
+      "tmg_stock", "etel_stock", "tbill_12m_btc", "tbill_12m_accepted_ratio", "carry_ex_post_3m", "carry_ex_ante",
+      "foreign_tbills_holdings", "egx_foreign_net", "portfolio_net_fy", "msci_em_proxy"]),
     ("monetary", "Rates & inflation", "الفايدة والتضخم",
      ["cbe_odr", "cbe_olr", "cbe_mainop", "interbank_overnight", "real_headline", "real_core", "real_expected",
       "cpi_urban_yoy", "cpi_core_yoy", "cpi_urban_mom", "cpi_core_mom", "cpi_fv_yoy", "cpi_regulated_yoy",
@@ -65,6 +69,7 @@ DIRECTION = {
     "brent_gap": 1, "ca_pressure_pct_gdp": 1, "brent_egp": 1, "brent_egp_qavg_chg": 1, "ttf_fut": 1, "ttf": 1, "wheat": 1,
     "vix": 1, "dxy": 1, "usd_broad": 1, "us10y": 1, "em_spread_proxy": 1, "gpr_daily": 1, "gpr_egypt": 1,
     "hormuz_ratio_7dma": -1, "babelmandeb_ratio_7dma": -1, "debt_service_next_year_to_nir": 1, "ext_debt_stock": 1,
+    "cib_gdr_premium_pct": 1, "cib_gdr_implied_fx": 1, "egx30_usd": -1,
     "tbill_12m_yield": 1, "tbill_12m_btc": -1, "tbill_12m_accepted_ratio": -1, "pmi": -1, "gold_local_premium_pct": 1,
 }
 
@@ -109,7 +114,7 @@ CONCEPTS = {
                                       "الفايدة العالية بتحارب التضخم بس بتبطأ الاقتصاد، وضعف النشاط بيصعب القرار."),
 }
 
-_ICONS = {"fx": "£", "monetary": "%", "external": "⇄", "fiscal": "🏛", "energy": "⛽", "real": "📈", "global": "🌐",
+_ICONS = {"hot": "⇅", "fx": "£", "monetary": "%", "external": "⇄", "fiscal": "🏛", "energy": "⛽", "real": "📈", "global": "🌐",
           "geo": "🧭", "health": "✚"}
 
 
@@ -243,6 +248,9 @@ def build_bundle(conn) -> dict:
     v = DataView(conn, as_of)
     idx = compute(conn, as_of)
     series = {sid: series_payload(v, sid, as_of) for sid in catalog()}
+    from ..rules import evaluate
+    from .chain import build_chain, headline
+    chain = build_chain(v, evaluate(conn, as_of))
     hist_since = pd.Timestamp(as_of - timedelta(days=365 * 3 + 30))
     history = {sid: _points(v.series(sid), since=hist_since if catalog()[sid]["frequency"] == "daily" else None)
                for sid in KEY_HISTORY}
@@ -284,7 +292,45 @@ def build_bundle(conn) -> dict:
         "brief": {"date": as_of.isoformat(), "md": brief_md.read_text(encoding="utf-8") if brief_md.exists() else None,
                   "archive": briefs},
         "next_runs": next_runs(now),
+        "audit": _audit(conn),
+        "chain": chain,
+        "headline": headline(chain, idx["ppi"]),
+        "lessons": build_lessons(v),
     }
+
+
+def _lesson_values(v: DataView) -> dict:
+    def g(sid, f, scale=1.0):
+        o = v.latest(sid)
+        return f.format(o.value * scale) if o is not None else "—"
+    return {"fx": g("fx_cbe_official", "{:.2f}"), "remit": g("remittances", "{:.1f}"), "suez": g("suez_ratio_7dma", "{:.0f}%", 100),
+            "oil_imports": g("imports_oil_fy", "{:.1f}"), "ca_deficit": g("bop_ca_fy", "{:.1f}", -1),
+            "nir": g("nir", "{:.1f}", 0.001), "months": g("nir_months_imports", "{:.1f}"), "odr": g("cbe_odr", "{:.2f}%"),
+            "cpi": g("cpi_urban_yoy", "{:.1f}%"), "real": g("real_headline", "{:+.1f}"), "brent": g("brent_fut", "${:.0f}"),
+            "budget": g("budget_oil_assumption", "${:.0f}")}
+
+
+def build_lessons(v: DataView) -> list[dict]:
+    class Safe(dict):
+        def __missing__(self, k):
+            return "—"
+    vals = Safe(_lesson_values(v))
+    out = []
+    for les in load_yaml("lessons.yaml")["lessons"]:
+        fill = lambda pair: [pair[0].format_map(vals), pair[1].format_map(vals)]  # noqa: E731
+        out.append({"id": les["id"], "icon": les.get("icon", ""), "title": les["title"], "minutes": les.get("minutes", 2),
+                    "nodes": les.get("nodes", []), "steps": [fill(st) for st in les["steps"]],
+                    "quiz": {"q": les["quiz"]["q"], "options": les["quiz"]["options"], "answer": les["quiz"]["answer"],
+                             "why": les["quiz"]["why"]}})
+    return out
+
+
+def _audit(conn) -> dict | None:
+    try:
+        from ..audit import run_audit
+        return run_audit(conn)
+    except Exception:  # noqa: BLE001
+        return None
 
 
 def _js(callback: str, payload) -> str:

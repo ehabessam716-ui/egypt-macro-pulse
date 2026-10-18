@@ -213,6 +213,55 @@ def fx05(c: Ctx, r: RuleResult):
         fire(r, 1, min(1.0, o.value / 5))
 
 
+@rule("HM01")
+def hm01(c: Ctx, r: RuleResult):
+    """Foreign portfolio money: CIB London premium trend, T-bill demand, carry, EGX30 in dollars."""
+    p = c.p("HM01")
+    stress, ease, det, det_ar = 0, 0, [], []
+    g = c.v.series("cib_gdr_premium_pct")
+    if len(g) > p["window"] and c.v.fresh("cib_gdr_premium_pct"):
+        r.inputs.append(c.v.latest("cib_gdr_premium_pct").cite())
+        dev = g.iloc[-1] - g.iloc[-p["window"]:-1].mean()
+        if dev > p["gdr_widen_pp"]:
+            stress += 1; det.append(f"CIB London-implied gap widened {dev:+.1f} pp vs its recent average"); det_ar.append("فرق دولار سهم التجاري الدولي بيوسع")
+        elif dev < -p["gdr_widen_pp"]:
+            ease += 1; det.append(f"CIB London-implied gap narrowed {dev:+.1f} pp"); det_ar.append("فرق دولار سهم التجاري الدولي بيضيق")
+    b = c.v.fresh("tbill_12m_btc")
+    if b:
+        r.inputs.append(b.cite())
+        if b.value < p["btc_min"]:
+            stress += 1; det.append(f"weak 1-year T-bill demand (bid-to-cover {b.value:.2f})"); det_ar.append("طلب ضعيف على أذون الخزانة")
+        elif b.value > 2:
+            ease += 1; det.append(f"strong 1-year T-bill demand (bid-to-cover {b.value:.2f})"); det_ar.append("طلب قوي على أذون الخزانة")
+    cr = c.v.fresh("carry_ex_post_3m")
+    if cr:
+        r.inputs.append(cr.cite())
+        if cr.value < 0:
+            stress += 1; det.append(f"carry trade lost {cr.value:.1f}% over 3 months"); det_ar.append("عائد المراجحة خسران")
+        elif cr.value > 3:
+            ease += 1; det.append(f"carry trade earned {cr.value:+.1f}% over 3 months"); det_ar.append("عائد المراجحة كسبان")
+    e = c.v.series("egx30_usd")
+    if len(e) > 21 and c.v.fresh("egx30_usd"):
+        r.inputs.append(c.v.latest("egx30_usd").cite())
+        chg = (e.iloc[-1] / e.iloc[-21] - 1) * 100
+        if chg < -p["egx_usd_pct"]:
+            stress += 1; det.append(f"EGX30 in dollars {chg:+.1f}% in 20 sessions"); det_ar.append("البورصة بالدولار نازلة")
+        elif chg > p["egx_usd_pct"]:
+            ease += 1; det.append(f"EGX30 in dollars {chg:+.1f}% in 20 sessions"); det_ar.append("البورصة بالدولار طالعة")
+    if not r.inputs:
+        r.missing += ["cib_gdr_premium_pct", "tbill_12m_btc", "carry_ex_post_3m", "egx30_usd"]
+        return no_eval(r)
+    net = stress - ease
+    r.vals.update(summary="; ".join(det) or "no strong signal from the four gauges",
+                  summary_ar="، و".join(det_ar) or "مفيش إشارة قوية",
+                  verdict="Foreign money looks to be leaving (pressure)." if net >= p["min_agree"] else
+                          "Foreign money looks to be coming in (relief)." if net <= -p["min_agree"] else "Mixed — no clear direction.",
+                  verdict_ar="الأموال الأجنبية شكلها بتخرج، وده ضغط." if net >= p["min_agree"] else
+                             "الأموال الأجنبية شكلها داخلة، وده راحة." if net <= -p["min_agree"] else "الصورة مختلطة.")
+    if abs(net) >= p["min_agree"]:
+        fire(r, 1 if net > 0 else -1, min(1.0, abs(net) / 3))
+
+
 # ======================================================================= monetary & inflation
 @rule("MO01")
 def mo01(c: Ctx, r: RuleResult):

@@ -144,3 +144,26 @@ def test_live_insights_without_network(conn):
     assert out["risk"]["dir"] == 1  # VIX above 25 = risk-off
     for i in out.values():
         assert i["sources"] and all(s["url"].startswith("http") for s in i["sources"]) and i["ar"]
+
+
+def test_chain_and_lessons_build(conn):
+    from pulse.data import DataView
+    from pulse.outputs.chain import build_chain, headline
+    from pulse.outputs.site_data import build_lessons
+    from pulse.rules import evaluate
+    put(conn, "fx_cbe_official", "2026-10-15", 53.41)
+    v = DataView(conn)
+    ch = build_chain(v, evaluate(conn, date(2026, 10, 18)))
+    ids = {n["id"] for n in ch["nodes"]}
+    assert {"oil", "remit", "reserves", "pound", "prices", "rates", "hot", "life"} <= ids
+    assert all(e["from"] in ids and e["to"] in ids for e in ch["edges"])
+    assert all(t in ids for t in ch["tour"])
+    for n in ch["nodes"]:
+        assert all(len(n[k]) == 2 and n[k][0] for k in ("title", "one", "why", "next"))
+    h = headline(ch, {"value": 15})
+    assert "pressure" in h["en"] and h["ar"]
+    ls = build_lessons(v)
+    assert len(ls) >= 8
+    for l in ls:
+        assert all("{" not in st[0] and "{" not in st[1] for st in l["steps"])
+        assert 0 <= l["quiz"]["answer"] < len(l["quiz"]["options"])

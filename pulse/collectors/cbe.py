@@ -305,10 +305,12 @@ def parse_cpi_release(text: str) -> list[tuple[str, date, float]]:
         if mi < 0 and ai < 0:
             continue
         freq = "mom" if mi > ai else "yoy"
-        for v, mon in re.findall(r"(-?\d+(?:\.\d+)?) percent in ([A-Z][a-z]+ \d{4})", sent):
+        # CBE writes negatives in words: "negative 0.5 percent" (also handle "minus" and a leading sign)
+        for neg, v, mon in re.findall(r"((?:negative|minus)\s+)?(-?\d+(?:\.\d+)?) percent in ([A-Z][a-z]+ \d{4})", sent, re.I):
             d = month_year(mon)
             if d:
-                out.append((f"cpi_{kind}_{freq}", d, float(v)))
+                val = float(v)
+                out.append((f"cpi_{kind}_{freq}", d, -abs(val) if neg else val))
     return out
 
 

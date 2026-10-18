@@ -28,8 +28,8 @@ sources:
     url: https://finance.yahoo.com
     kind: yfinance
     access: FREE_API
-    tickers: ["EGP=X", "BZ=F", "CL=F", "GC=F", "SI=F", "ZW=F", "TTF=F", "DX-Y.NYB", "EEM", "^CASE30"]
-    series: [fx_market, brent_fut, wti_fut, xauusd, xagusd, wheat, ttf_fut, dxy, msci_em_proxy, egx30]
+    tickers: ["EGP=X", "BZ=F", "CL=F", "GC=F", "SI=F", "ZW=F", "TTF=F", "DX-Y.NYB", "EEM", "^CASE30", "COMI.CA", "CBKD.IL", "HRHO.CA", "TMGH.CA", "ETEL.CA"]
+    series: [fx_market, brent_fut, wti_fut, xauusd, xagusd, wheat, ttf_fut, dxy, msci_em_proxy, egx30, cib_local, cib_gdr, efg_hermes, tmg_stock, etel_stock]
   - id: egx
     name: Egyptian Exchange (foreign net flows bulletin)
     url: https://www.egx.com.eg/en/homepage.aspx
@@ -157,6 +157,12 @@ sources:
     required_columns: [GPRD]
     optional_columns: [GPRD_ACT, GPRD_THREAT]
     series: [gpr_daily, gpr_daily_acts, gpr_daily_threats]
+  - id: google_finance
+    name: Google Finance quote pages
+    url: https://www.google.com/finance/quote/COMI:EGX
+    kind: manual
+    access: MANUAL
+    manual_reason: "robots.txt allows /finance, but EGX quotes (COMI:EGX, EGX70EWI:INDEXEGX) come back 'not found' in the page data; only USD/EGP is present (Yahoo already covers it). Further data needs Google's undocumented internal API — not used."
   - id: gdelt_doc
     name: GDELT DOC 2.0 API
     url: https://api.gdeltproject.org/api/v2/doc/doc?query=egypt%20economy&mode=timelinetone&format=json&timespan=1w

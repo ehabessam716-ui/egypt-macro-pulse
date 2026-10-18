@@ -74,3 +74,12 @@ def test_banklive():
          "XAUEGP Gold 24 Karat 7,166 -0.07% 7,143 -0.07% XAUEGP Gold 21 Karat 6,270 -0.08% 6,250 -0.08% XAUEGP Gold Pound 50,160 -0.08%")
     p = parse_banklive(t)
     assert p["gold_eg_21k"] == 6270 and p["gold_eg_24k"] == 7166 and p["xauusd_spot"] == 4165.42 and p["gold_eg_pound"] == 50160
+
+
+def test_cpi_release_negative_in_words():
+    t = ("Monthly urban headline CPI inflation, released today by CAPMAS, recorded 0.0 percent in July 2026 compared with "
+         "negative 0.5 percent in July 2025 and negative 0.4 percent in June 2026. On an annual basis, urban headline CPI "
+         "inflation recorded 14.9 percent in July 2026 compared with 14.3 percent in June 2026.")
+    out = parse_cpi_release(t)
+    assert ("cpi_urban_mom", date(2025, 7, 1), -0.5) in out and ("cpi_urban_mom", date(2026, 6, 1), -0.4) in out
+    assert ("cpi_urban_mom", date(2026, 7, 1), 0.0) in out
