@@ -52,6 +52,15 @@ Seeds: 18 confirmed against primary sources, 0 conflicts, 30 secondary-only (`re
 - **Live:** polls every 60 s and updates in place; the **Update now** button runs `pulse run --job daily` through the server.
 - **No console windows:** scheduled jobs and the server run with `pythonw`.
 
+## Explanations & stock indices (added 18 Oct 2026, evening)
+
+- All 201 indicators have a bilingual explanation (129 written individually + 12 family patterns) in `config/explain.yaml`;
+  a test fails if any indicator lacks one.
+- For gaps, changes and ratios the impact is read from the level vs a threshold (e.g. bid-to-cover vs 1.2, PMI vs 50),
+  not from the day-to-day move.
+- EGX30 added (Yahoo ^CASE30 — no back history available, accumulates from 18 Oct 2026). EGX70 EWI is MANUAL:
+  egx.com.eg answers only after an anti-bot JavaScript challenge, which the tool does not bypass.
+
 ## How to use
 
 - **App:** http://localhost:8765 (or open `site/index.html`).

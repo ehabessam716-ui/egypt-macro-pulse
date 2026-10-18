@@ -16,6 +16,12 @@ Manually: `.venv\Scripts\pulse serve --open`. Without the server you can also op
 
 - Pound Pressure gauge, sub-indices (click one to drill in), today's story, key numbers with sparklines
 - Click any number → history chart (1M…All), source, definition, observations table, CSV download
+- Every number has a **"What this means"** panel (EN/AR): what it is · what usually moves it · what happened (its change, plus
+  related indicators, signals and events from the same period — shown as *possible reasons from the data, not proof*) ·
+  what it may lead to. Texts live in `config/explain.yaml` (edit freely).
+- **ⓘ Explain** switch in the header adds a one-line meaning + impact to every tile.
+- Stock market: **EGX30** (Yahoo `^CASE30`, unofficial; history builds from 18 Oct 2026) and **EGX70 EWI** (MANUAL — EGX's site
+  is behind an anti-bot challenge, so enter closes in `data/manual/manual_inputs.xlsx`).
 - `Ctrl K` or `/` to search all 199 indicators · EN / ع switch (full right-to-left Arabic) · light / dark / auto theme
 - Live: the page checks for new data every 60 s and updates in place (changed tiles glow); **Update now** runs a fresh collection
 - Links: `?lang=ar`, `?theme=dark`, `#/signals`, `#/brief`, `#/d/fx`, `#/s/nir` (opens an indicator)
