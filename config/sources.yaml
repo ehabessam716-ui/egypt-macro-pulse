@@ -28,15 +28,15 @@ sources:
     url: https://finance.yahoo.com
     kind: yfinance
     access: FREE_API
-    tickers: ["EGP=X", "BZ=F", "CL=F", "GC=F", "SI=F", "ZW=F", "TTF=F", "DX-Y.NYB", "EEM"]
-    series: [fx_market, brent_fut, wti_fut, xauusd, xagusd, wheat, ttf_fut, dxy, msci_em_proxy]
+    tickers: ["EGP=X", "BZ=F", "CL=F", "GC=F", "SI=F", "ZW=F", "TTF=F", "DX-Y.NYB", "EEM", "^CASE30"]
+    series: [fx_market, brent_fut, wti_fut, xauusd, xagusd, wheat, ttf_fut, dxy, msci_em_proxy, egx30]
   - id: egx
     name: Egyptian Exchange (foreign net flows bulletin)
     url: https://www.egx.com.eg/en/homepage.aspx
     kind: manual
     access: MANUAL
-    manual_reason: "connection reset for scripted clients in Phase 0; bulletin is an ASP.NET postback page — MANUAL"
-    series: [egx_foreign_net]
+    manual_reason: "site answers only after an F5 anti-bot JavaScript challenge (TSPD) — not bypassed by policy; EGX30 comes from Yahoo ^CASE30 instead"
+    series: [egx_foreign_net, egx70]
   - id: fx_parallel
     name: Parallel-market USD/EGP
     kind: manual

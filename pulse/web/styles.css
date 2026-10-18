@@ -190,6 +190,18 @@ details.more summary::before { content: "▸ "; } details.more[open] summary::be
   100% { box-shadow: var(--shadow); } }
 .kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 
+/* ---------- explanations ---------- */
+.btn.toggle[aria-pressed="true"] { background: var(--sand-soft); border-color: var(--sand); color: color-mix(in srgb, var(--sand) 70%, var(--text)); }
+.tile .t-ex { font-size: 11.5px; line-height: 1.35; color: var(--text-2); margin: 2px 0; }
+.tile .t-imp { color: var(--text); font-weight: 500; }
+.tile.explained { min-height: 210px; }
+.explain { margin-top: 12px; border-color: color-mix(in srgb, var(--sand) 45%, var(--border)); background:
+  linear-gradient(180deg, color-mix(in srgb, var(--sand-soft) 55%, transparent), transparent 140px), var(--surface); }
+.ex-row { padding: 8px 0; border-top: 1px dashed var(--border); } .ex-row:first-of-type { border-top: 0; }
+.ex-row > b { display: block; font-size: 11.5px; text-transform: uppercase; letter-spacing: .05em; color: color-mix(in srgb, var(--sand) 70%, var(--text)); margin-bottom: 3px; }
+html[lang="ar"] .ex-row > b { text-transform: none; letter-spacing: 0; font-size: 13px; }
+.ex-row p { margin: 3px 0; font-size: 14px; }
+
 /* ---------- charts ---------- */
 .chart { width: 100%; height: 300px; direction: ltr; overflow: hidden; }
 .chart.tall { height: 380px; }

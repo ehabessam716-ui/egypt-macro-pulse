@@ -106,3 +106,24 @@ def test_site_bundle_is_valid_js(conn, tmp_path, monkeypatch):
     assert {"ppi", "subindices", "rules", "calendar", "domains", "brief", "next_runs"} <= set(b)
     assert (tmp_path / "data" / "manifest.js").exists() and (tmp_path / "index.html").exists()
     assert (tmp_path / "data" / "series" / "fx_cbe_official.js").exists()
+
+
+def test_every_indicator_has_bilingual_explanation():
+    from pulse.data import catalog
+    from pulse.outputs.site_data import explain_for
+    missing = []
+    for sid, m in catalog().items():
+        e = explain_for(sid)
+        if e is None:
+            missing.append(sid)
+            continue
+        for k in ("what", "drivers", "up", "down"):
+            assert isinstance(e[k], list) and len(e[k]) == 2 and e[k][0] and e[k][1], (sid, k)
+    assert not missing, f"indicators without an explanation: {missing}"
+
+
+def test_level_basis_reads_impact_from_level():
+    from pulse.outputs.site_data import explain_for
+    assert explain_for("tbill_12m_btc")["basis"] == "level" and explain_for("tbill_12m_btc")["pivot"] == 1.2
+    assert explain_for("fx_chg_3m")["basis"] == "level" and explain_for("pmi")["pivot"] == 50
+    assert explain_for("fx_cbe_official").get("basis") is None

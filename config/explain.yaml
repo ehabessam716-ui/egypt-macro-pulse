@@ -1,0 +1,915 @@
+# Plain-language explanations for readers (EN / Egyptian Arabic).
+# what   = what the indicator is
+# drivers= what usually moves it
+# up/down= what a rise / fall tends to mean for the pound and the economy
+# related= indicators whose moves are shown as "possible reasons from the data" (never presented as proof)
+# `patterns` cover families of similar series (regex on the id). Exact ids win over patterns.
+
+series:
+  fx_cbe_official:
+    what: ["How many Egyptian pounds one US dollar costs at the Central Bank's official average market rate (buy side).", "عدد الجنيهات اللي بتشتري دولار واحد بسعر البنك المركزي الرسمي (سعر الشراء)."]
+    drivers: ["Supply and demand for dollars in banks: remittances, tourism, Suez fees, foreign investment and IMF/Gulf money bring dollars in; imports (especially fuel and food) and debt payments take them out.", "العرض والطلب على الدولار في البنوك: التحويلات والسياحة وقناة السويس والاستثمار الأجنبي وفلوس صندوق النقد والخليج بيدخلوا دولارات، والواردات خصوصا البترول والأكل وسداد الديون بيخرجوها."]
+    up: ["A higher number means a weaker pound: imports and imported medicines cost more, which feeds inflation over the following months.", "الرقم لما يزيد يعني الجنيه ضعف: المستورد والأدوية المستوردة بتغلى، وده بيزود التضخم في الشهور الجاية."]
+    down: ["A lower number means a stronger pound: imported goods get cheaper and inflation pressure eases.", "الرقم لما يقل يعني الجنيه قوي: المستورد بيرخص وضغط التضخم بيخف."]
+    related: [nir, remittances_yoy, brent, fx_gold_implied, tbill_12m_yield, portfolio_net_fy]
+  fx_cbe_official_sell:
+    what: ["The CBE official selling rate for one US dollar (a little above the buy rate).", "سعر بيع الدولار الرسمي في البنك المركزي، أعلى شوية من سعر الشراء."]
+    drivers: ["Moves together with the buy rate; the gap is the bank spread.", "بيتحرك مع سعر الشراء، والفرق بينهم هو هامش البنوك."]
+    up: ["Weaker pound (see the official buy rate).", "الجنيه أضعف."]
+    down: ["Stronger pound.", "الجنيه أقوى."]
+    related: [fx_cbe_official]
+  fx_market:
+    what: ["USD/EGP as quoted on global markets (Yahoo). Unofficial, but a quick cross-check on the CBE rate.", "سعر الدولار مقابل الجنيه في الأسواق العالمية حسب ياهو. غير رسمي لكنه بيتأكد بيه السعر الرسمي."]
+    drivers: ["The same dollar supply and demand, plus how foreign traders price Egypt's risk.", "نفس العرض والطلب على الدولار، وكمان نظرة المستثمرين الأجانب لمخاطر مصر."]
+    up: ["If it rises above the official rate, foreigners expect the pound to weaken.", "لو طلع فوق السعر الرسمي يبقى الأجانب متوقعين الجنيه يضعف."]
+    down: ["Close to or below the official rate means no hidden pressure.", "لو قريب من الرسمي أو أقل يبقى مفيش ضغط مستخبي."]
+    related: [fx_cbe_official, fx_market_gap_pct]
+  fx_gold_implied:
+    what: ["The dollar rate implied by local gold prices: Egyptian 21-karat gold price divided by the global gold price. Egyptians often buy gold to protect savings.", "سعر الدولار المحسوب من الدهب: سعر جرام عيار 21 في مصر مقسوم على سعر الدهب العالمي. المصريين بيشتروا دهب يحموا بيه فلوسهم."]
+    drivers: ["Local gold demand, fear of devaluation and the global gold price.", "الطلب المحلي على الدهب، والخوف من تخفيض الجنيه، وسعر الدهب العالمي."]
+    up: ["If it rises above the official rate, people are paying a premium to hold gold instead of pounds — a warning sign of expected devaluation.", "لو طلع فوق السعر الرسمي يبقى الناس بتدفع زيادة عشان تمسك دهب بدل الجنيه، ودي علامة إنهم متوقعين تخفيض."]
+    down: ["Back near the official rate means the market trusts the official price.", "لو رجع قريب من الرسمي يبقى السوق مصدق السعر الرسمي."]
+    related: [gold_eg_21k, xauusd_spot, fx_cbe_official]
+  gold_gap_pct:
+    basis: level
+    pivot: 0
+    what: ["Gap between the gold-implied dollar rate and the official rate, in %. Within about ±0.8% is normal noise.", "الفرق بين دولار الدهب والدولار الرسمي بالنسبة المئوية. أي فرق جوه حدود 0.8% يعتبر عادي."]
+    drivers: ["Devaluation fears, local gold demand around holidays and weddings, and sudden moves in global gold.", "الخوف من التخفيض، والطلب على الدهب في المواسم والأفراح، وحركة الدهب العالمي المفاجئة."]
+    up: ["Above +3% for several days: people hedge against a weaker pound; above +5% is an alert.", "لو فوق 3% كذا يوم يبقى الناس بتتحوط من ضعف الجنيه، وفوق 5% إنذار."]
+    down: ["Below zero (a discount): local dollar demand is easing.", "لو تحت الصفر يبقى الطلب على الدولار جوه البلد بيهدى."]
+    related: [fx_gold_implied, gold_eg_21k, xauusd_spot]
+  fx_market_gap_pct:
+    basis: level
+    pivot: 0
+    what: ["Difference between the market (Yahoo) rate and the CBE official rate, in %.", "الفرق بين سعر السوق العالمي والسعر الرسمي بالنسبة المئوية."]
+    drivers: ["Timing differences and how foreign traders see the pound.", "فرق التوقيت ونظرة المتعاملين الأجانب للجنيه."]
+    up: ["A persistent positive gap hints at expected depreciation.", "لو الفرق موجب ومستمر يبقى فيه توقع لضعف الجنيه."]
+    down: ["Near zero is normal.", "قريب من الصفر يعتبر طبيعي."]
+    related: [fx_market, fx_cbe_official]
+  fx_vol_20d:
+    what: ["How much the official rate has been jumping around over the last 20 business days (annualized volatility).", "قد إيه السعر الرسمي بيتهز في آخر 20 يوم عمل."]
+    drivers: ["Bursts of dollar demand, CBE interventions, shocks such as wars or rating changes.", "موجات طلب على الدولار، وتدخل البنك المركزي، وصدمات زي الحروب أو تغيير التصنيف."]
+    up: ["Higher volatility scares foreign investors and raises hedging costs for importers.", "التذبذب العالي بيخوف المستثمر الأجنبي وبيغلي التحوط على المستوردين."]
+    down: ["A calm rate supports confidence and planning.", "السعر الهادي بيدي ثقة وبيسهل التخطيط."]
+    related: [fx_cbe_official, vix]
+  carry_ex_post_3m:
+    basis: level
+    pivot: 0
+    what: ["What a foreign investor actually earned over the last 3 months by holding 3-month T-bills, after the pound's move (in %).", "اللي المستثمر الأجنبي كسبه فعلا في آخر 3 شهور من أذون الخزانة بعد حساب حركة الجنيه."]
+    drivers: ["T-bill yields minus the pound's depreciation.", "عائد الأذون ناقص نسبة ضعف الجنيه."]
+    up: ["Positive and high: carry trade pays, so more hot money may come in and support the pound.", "لو عالي يبقى المراجحة مربحة، وممكن تدخل أموال ساخنة تدعم الجنيه."]
+    down: ["Negative: the pound fell more than the interest earned — foreigners may leave.", "لو سالب يبقى الجنيه خسر أكتر من الفايدة، والأجانب ممكن يخرجوا."]
+    related: [tbill_3m_yield, fx_chg_3m]
+  carry_ex_ante:
+    basis: level
+    pivot: 0
+    what: ["Expected carry: 1-year T-bill yield minus the depreciation hinted at by the gold gap.", "العائد المتوقع: فايدة أذون سنة ناقص التخفيض اللي بيلمح ليه فرق الدهب."]
+    drivers: ["T-bill yields and devaluation expectations.", "عوايد الأذون وتوقعات التخفيض."]
+    up: ["More attractive for foreign investors.", "جذاب أكتر للمستثمر الأجنبي."]
+    down: ["Less attractive; hot-money inflows may slow.", "جاذبيته أقل، والأموال الساخنة ممكن تبطأ."]
+    related: [tbill_12m_yield, gold_gap_pct]
+  egx30:
+    what: ["Price index of Egypt's 30 largest listed companies (EGX30), in points.", "مؤشر أسعار أكبر 30 شركة في البورصة المصرية بالنقاط."]
+    drivers: ["Company profits, interest rates, foreign and Gulf buying, and fear of devaluation (Egyptians buy shares to protect savings from a weaker pound).", "أرباح الشركات، والفايدة، وشراء الأجانب والعرب، والخوف من تخفيض الجنيه لأن المصريين بيشتروا أسهم يحموا بيها فلوسهم."]
+    up: ["Rising stocks usually signal confidence and inflows — but a rally in pounds can also mean people are hedging against devaluation. Check it against the dollar rate.", "الصعود عادة معناه ثقة وأموال داخلة، لكن ساعات بيكون تحوط من تخفيض الجنيه، فلازم نقارنه بسعر الدولار."]
+    down: ["Falling stocks can reflect foreign selling, higher rates or worries about growth.", "النزول ممكن يكون بيع أجانب أو فايدة أعلى أو قلق على النمو."]
+    related: [fx_cbe_official, egx_foreign_net, cbe_odr, msci_em_proxy]
+  egx70:
+    what: ["Equal-weighted index of 70 small and mid-sized listed companies (EGX70 EWI).", "مؤشر 70 شركة صغيرة ومتوسطة في البورصة بأوزان متساوية."]
+    drivers: ["Mostly local retail investors; very sensitive to liquidity and sentiment.", "أغلبه مستثمرين أفراد مصريين، وبيتأثر جامد بالسيولة والمزاج العام."]
+    up: ["Local risk appetite is strong (sometimes speculative).", "الإقبال المحلي على المخاطرة عالي، وساعات بيكون مضاربة."]
+    down: ["Local investors are cautious or short of cash.", "المستثمر المحلي حذر أو مفيش سيولة."]
+    related: [egx30, interbank_overnight]
+  egx_foreign_net:
+    basis: level
+    pivot: 0
+    what: ["Net buying (+) or selling (−) of Egyptian shares by foreign investors in a session.", "صافي شراء أو بيع الأجانب للأسهم المصرية في الجلسة."]
+    drivers: ["Global risk mood, Egypt's rate outlook and devaluation fears.", "مزاج الأسواق العالمية، وتوقعات الفايدة في مصر، والخوف من التخفيض."]
+    up: ["Foreign buying brings dollars in.", "شراء الأجانب بيدخل دولارات."]
+    down: ["Several days of foreign selling is a hot-money exit signal.", "بيع الأجانب كذا يوم ورا بعض علامة خروج أموال ساخنة."]
+    related: [egx30, vix]
+  fx_parallel:
+    what: ["Dollar price outside banks (black/parallel market), entered manually from press reports.", "سعر الدولار برة البنوك (السوق الموازية)، بيتدخل يدوي من الأخبار."]
+    drivers: ["Dollar shortages in banks.", "نقص الدولار في البنوك."]
+    up: ["A big gap over the official rate (>5%) has preceded devaluations in Egypt.", "الفرق الكبير عن الرسمي فوق 5% كان بيسبق التخفيض في مصر."]
+    down: ["A small or no gap means banks are meeting demand.", "الفرق الصغير معناه البنوك بتلبي الطلب."]
+    related: [fx_cbe_official, nir]
+  eurobond_yield:
+    what: ["Interest rate investors demand to hold Egypt's dollar bonds.", "الفايدة اللي المستثمرين بيطلبوها عشان يمسكوا سندات مصر بالدولار."]
+    drivers: ["Egypt's credit risk plus US Treasury yields.", "مخاطر مصر الائتمانية زائد عوايد السندات الأمريكية."]
+    up: ["Borrowing abroad gets more expensive; a sign of stress.", "الاقتراض من برة بيغلى، ودي علامة ضغط."]
+    down: ["Cheaper borrowing and more confidence.", "الاقتراض أرخص والثقة أعلى."]
+    related: [us10y, cds_5y, em_spread_proxy]
+  cds_5y:
+    what: ["Price of insurance against Egypt defaulting over 5 years, in basis points.", "تمن التأمين ضد إن مصر متدفعش ديونها لخمس سنين، بالنقاط الأساسية."]
+    drivers: ["Reserves, IMF support, ratings and regional risk.", "الاحتياطي ودعم صندوق النقد والتصنيف ومخاطر المنطقة."]
+    up: ["Markets see more risk; rating downgrades often follow.", "السوق شايف مخاطر أكتر، وغالبا بيجي بعدها خفض تصنيف."]
+    down: ["Markets see less risk.", "السوق شايف مخاطر أقل."]
+    related: [eurobond_yield, nir]
+
+  cbe_odr:
+    what: ["The Central Bank's overnight deposit rate — the floor of Egypt's interest-rate corridor and the main policy rate.", "فايدة الإيداع لليلة واحدة في البنك المركزي، وهي الفايدة الأساسية في مصر."]
+    drivers: ["Set by the Monetary Policy Committee about 8 times a year, mainly to fight inflation and keep the pound attractive.", "بتحددها لجنة السياسة النقدية حوالي 8 مرات في السنة، عشان تحارب التضخم وتخلي الجنيه جذاب."]
+    up: ["A hike fights inflation and attracts foreign money, but makes loans and government debt more expensive.", "الرفع بيحارب التضخم وبيجذب الأموال الأجنبية، بس بيغلي القروض وديون الحكومة."]
+    down: ["A cut helps growth and the budget, but can push money out if real rates get too low.", "التخفيض بيساعد النمو والموازنة، بس ممكن يطلع الفلوس لو الفايدة الحقيقية قلت قوي."]
+    related: [cpi_urban_yoy, cpi_core_yoy, real_headline, cbe_mpc_tone]
+  cbe_olr:
+    what: ["Overnight lending rate — the ceiling of the corridor (what banks pay to borrow from the CBE).", "فايدة الإقراض لليلة واحدة، وهي السقف اللي البنوك بتستلف بيه من البنك المركزي."]
+    drivers: ["Moves with the deposit rate at MPC meetings.", "بتتحرك مع فايدة الإيداع في اجتماعات اللجنة."]
+    up: ["Tighter money.", "تشديد."]
+    down: ["Easier money.", "تيسير."]
+    related: [cbe_odr]
+  cbe_mainop:
+    what: ["Rate of the CBE's main operation (mid-corridor).", "سعر العملية الرئيسية للبنك المركزي في نص الممر."]
+    drivers: ["MPC decisions.", "قرارات لجنة السياسة النقدية."]
+    up: ["Tighter money.", "تشديد."]
+    down: ["Easier money.", "تيسير."]
+    related: [cbe_odr]
+  cbe_discount:
+    what: ["The CBE discount rate.", "سعر الائتمان والخصم في البنك المركزي."]
+    drivers: ["MPC decisions.", "قرارات لجنة السياسة النقدية."]
+    up: ["Tighter money.", "تشديد."]
+    down: ["Easier money.", "تيسير."]
+    related: [cbe_odr]
+  interbank_overnight:
+    what: ["CONIA — the average rate banks charge each other overnight.", "متوسط الفايدة اللي البنوك بتسلف بيها بعض لليلة واحدة."]
+    drivers: ["The policy corridor and how much cash banks have.", "ممر الفايدة وقد إيه البنوك معاها سيولة."]
+    up: ["Tighter liquidity in banks.", "السيولة في البنوك أقل."]
+    down: ["Plenty of liquidity.", "السيولة كتير."]
+    related: [cbe_odr, cbe_olr]
+  cbe_mpc_tone:
+    what: ["A simple word count of hawkish (tighter) minus dovish (easier) words in the latest MPC statement. Tool heuristic.", "عد بسيط للكلمات المتشددة ناقص الكلمات الميالة للتيسير في آخر بيان للجنة. تقدير من الأداة."]
+    drivers: ["The CBE's view of inflation risks.", "نظرة البنك المركزي لمخاطر التضخم."]
+    up: ["More hawkish: cuts less likely soon.", "أكتر تشدد: التخفيض مش قريب."]
+    down: ["More dovish: rate cuts more likely.", "أكتر ميل للتيسير: التخفيض وارد."]
+    related: [cbe_odr, cpi_core_yoy]
+  real_headline:
+    what: ["Real interest rate: the deposit rate minus urban inflation. It's what savers and foreign investors truly earn.", "الفايدة الحقيقية: فايدة الإيداع ناقص التضخم. ده اللي المدخر والمستثمر بيكسبه بجد."]
+    drivers: ["CBE rate decisions and the monthly inflation print.", "قرارات الفايدة وأرقام التضخم الشهرية."]
+    up: ["Higher real rates attract foreign 'carry' money and support the pound, but slow borrowing and growth.", "الفايدة الحقيقية العالية بتجذب الأموال الأجنبية وبتدعم الجنيه، بس بتبطأ الاقتراض والنمو."]
+    down: ["Low or negative real rates make holding pounds unattractive — money moves to dollars, gold or property.", "لما تقل أو تبقى سالبة، محدش عايز يمسك جنيه والفلوس بتروح للدولار والدهب والعقارات."]
+    related: [cbe_odr, cpi_urban_yoy]
+  real_core:
+    what: ["Deposit rate minus core inflation (inflation without volatile food and administered prices).", "فايدة الإيداع ناقص التضخم الأساسي اللي من غير الأكل الطازة والأسعار المحددة إداريا."]
+    drivers: ["CBE rate and core inflation.", "الفايدة والتضخم الأساسي."]
+    up: ["Tighter real policy; supportive for the pound.", "سياسة أشد وده دعم للجنيه."]
+    down: ["Looser real policy.", "سياسة أخف."]
+    related: [cbe_odr, cpi_core_yoy]
+  real_expected:
+    what: ["Deposit rate minus the CBE's own forecast of inflation — a forward-looking real rate.", "فايدة الإيداع ناقص توقع البنك المركزي للتضخم، يعني الفايدة الحقيقية المتوقعة."]
+    drivers: ["CBE rate and its inflation forecast.", "الفايدة وتوقع التضخم."]
+    up: ["Policy is tight relative to where inflation is heading.", "السياسة مشددة مقارنة باتجاه التضخم."]
+    down: ["Little cushion if inflation rises again.", "مفيش مساحة أمان لو التضخم رجع يزيد."]
+    related: [cbe_odr, infl_expectations]
+  real_ceiling:
+    what: ["Corridor ceiling (lending rate) minus urban inflation.", "سقف الممر ناقص التضخم."]
+    drivers: ["CBE rates and inflation.", "الفايدة والتضخم."]
+    up: ["Tighter.", "أشد."]
+    down: ["Looser.", "أخف."]
+    related: [cbe_olr, cpi_urban_yoy]
+  nir:
+    what: ["Net international reserves: dollars, gold and SDRs held by the Central Bank — Egypt's emergency savings.", "صافي الاحتياطيات الدولية: الدولارات والدهب وحقوق السحب اللي في إيد البنك المركزي، وهي مدخرات الطوارئ لمصر."]
+    drivers: ["Inflows (IMF and Gulf money, bond sales, FDI) minus debt payments and CBE support for the pound; gold price changes also revalue the gold part.", "اللي بيدخل من صندوق النقد والخليج والسندات والاستثمار ناقص سداد الديون ودعم الجنيه، وكمان سعر الدهب بيغير قيمة جزء الدهب."]
+    up: ["Bigger buffer against shocks — supports confidence in the pound. Check whether the rise came from gold prices or new money.", "سند أكبر ضد الصدمات وبيدعم الثقة في الجنيه. لكن شوف الزيادة جاية من سعر الدهب ولا فلوس جديدة."]
+    down: ["Falling reserves while the official rate stays flat can mean the CBE is defending the pound (a hidden peg).", "لو الاحتياطي بيقل والسعر الرسمي ثابت، ممكن البنك المركزي بيسند الجنيه."]
+    related: [nir_gold, xauusd, fx_cbe_official, remittances]
+  nir_chg_3m:
+    basis: level
+    pivot: 0
+    what: ["Change in reserves over the last 3 months (USD mn).", "تغير الاحتياطي في آخر 3 شهور بالمليون دولار."]
+    drivers: ["Same as reserves.", "نفس محركات الاحتياطي."]
+    up: ["Building buffers.", "بنبني سند."]
+    down: ["Using reserves — watch for a defended rate.", "بنصرف من الاحتياطي، فخلي بالك لو السعر متسند."]
+    related: [nir, fx_cbe_official]
+  nir_months_imports:
+    basis: level
+    pivot: 5
+    what: ["How many months of goods imports the reserves could pay for. Below about 3–5 months is considered thin.", "الاحتياطي يكفي كام شهر استيراد. أقل من تلات لخمس شهور يعتبر قليل."]
+    drivers: ["Reserves and the yearly import bill.", "الاحتياطي وفاتورة الاستيراد السنوية."]
+    up: ["Stronger buffer.", "سند أقوى."]
+    down: ["Thinner buffer; more vulnerable to shocks.", "سند أضعف ومعرضين للصدمات أكتر."]
+    related: [nir, imports_oil_fy, imports_nonoil_fy]
+  nir_gold:
+    what: ["Value of the CBE's gold holdings (USD mn).", "قيمة الدهب اللي عند البنك المركزي بالمليون دولار."]
+    drivers: ["Mostly the world gold price.", "غالبا سعر الدهب العالمي."]
+    up: ["Reserves look bigger, but it's revaluation, not new dollars.", "الاحتياطي بيبان أكبر لكن ده فرق تقييم مش دولارات جديدة."]
+    down: ["Reserves look smaller from gold price falls.", "الاحتياطي بيبان أقل بسبب نزول الدهب."]
+    related: [xauusd, nir]
+
+  cpi_urban_yoy:
+    what: ["Headline inflation in Egyptian cities: how much prices rose compared with the same month last year (CAPMAS, published by the CBE).", "التضخم في المدن: الأسعار زادت قد إيه مقارنة بنفس الشهر السنة اللي فاتت."]
+    drivers: ["The pound's past moves (imported prices), fuel and electricity price decisions, food prices and interest rates.", "حركة الجنيه اللي فاتت، وقرارات أسعار البنزين والكهربا، وأسعار الأكل، والفايدة."]
+    up: ["Rising inflation erodes salaries and savings and pressures the CBE to keep rates high.", "التضخم لما يزيد بياكل المرتبات والمدخرات، وبيضغط على البنك المركزي يسيب الفايدة عالية."]
+    down: ["Easing inflation raises real interest rates and opens the door to rate cuts.", "لما يقل الفايدة الحقيقية بتزيد والباب بيتفتح لتخفيض الفايدة."]
+    related: [fx_chg_3m, cpi_food_yoy, fuel_92, cbe_odr, cpi_core_yoy]
+  cpi_urban_mom:
+    what: ["Price change in cities versus the previous month.", "تغير الأسعار في المدن عن الشهر اللي فات."]
+    drivers: ["Food, fuel and administered price changes in that month.", "الأكل والبنزين والأسعار اللي الحكومة بتحددها في الشهر ده."]
+    up: ["Above about 1.5% for two months signals the CBE may stay hawkish.", "لو فوق 1.5% شهرين يبقى البنك المركزي هيفضل متشدد."]
+    down: ["Monthly price pressure is cooling.", "ضغط الأسعار الشهري بيهدى."]
+    related: [cpi_fv_mom, cpi_regulated_mom, fuel_92]
+  cpi_core_yoy:
+    what: ["Core inflation: price rises excluding fruit, vegetables and government-set prices — the trend the CBE watches.", "التضخم الأساسي من غير الخضار والفاكهة والأسعار اللي الحكومة بتحددها، وده الاتجاه اللي البنك المركزي بيراقبه."]
+    drivers: ["The pound's past depreciation and demand in the economy.", "ضعف الجنيه اللي فات والطلب في الاقتصاد."]
+    up: ["Sticky core inflation keeps rates high for longer.", "لو فضل عالي الفايدة هتفضل عالية مدة أطول."]
+    down: ["Underlying inflation is cooling — supports rate cuts.", "التضخم الأساسي بيهدى وده بيدعم تخفيض الفايدة."]
+    related: [fx_chg_3m, cbe_odr]
+  cpi_core_mom:
+    what: ["Core inflation versus the previous month.", "التضخم الأساسي مقارنة بالشهر اللي فات."]
+    drivers: ["Pass-through from the exchange rate and administered price hikes.", "أثر سعر الصرف وزيادات الأسعار الإدارية."]
+    up: ["Momentum is picking up.", "الزخم بيزيد."]
+    down: ["Momentum is fading.", "الزخم بيقل."]
+    related: [fx_chg_3m, fuel_92]
+  cpi_fv_yoy:
+    what: ["Inflation in fruit and vegetables — volatile, weather and season driven.", "تضخم الخضار والفاكهة، بيتقلب حسب الجو والموسم."]
+    drivers: ["Harvests, weather, transport costs.", "المحاصيل والجو وتكلفة النقل."]
+    up: ["Pushes headline inflation up temporarily.", "بيزود التضخم العام مؤقتا."]
+    down: ["Pulls headline inflation down temporarily.", "بيقلل التضخم العام مؤقتا."]
+    related: [cpi_urban_yoy]
+  cpi_regulated_yoy:
+    what: ["Inflation in government-set prices (fuel, electricity, transport, medicines…).", "تضخم الأسعار اللي الحكومة بتحددها زي البنزين والكهربا والمواصلات والأدوية."]
+    drivers: ["Fuel-committee and subsidy decisions.", "قرارات لجنة تسعير الوقود والدعم."]
+    up: ["Administered hikes feed into other prices later (second-round effects).", "الزيادات الإدارية بتعدي على باقي الأسعار بعدين."]
+    down: ["Frozen administered prices hold inflation down — but may be deferred, not cancelled.", "تثبيت الأسعار بيقلل التضخم، بس ممكن الزيادة تكون متأجلة."]
+    related: [fuel_92, brent_egp_qavg_chg]
+  infl_expectations:
+    what: ["The CBE's projected average inflation for the coming fiscal year.", "توقع البنك المركزي لمتوسط التضخم في السنة المالية الجاية."]
+    drivers: ["The CBE's own models: exchange rate, fuel decisions, demand.", "نماذج البنك المركزي: سعر الصرف وقرارات الوقود والطلب."]
+    up: ["A higher forecast means rates likely stay high.", "توقع أعلى يعني الفايدة غالبا هتفضل عالية."]
+    down: ["A lower forecast opens room for cuts.", "توقع أقل يعني فيه مساحة للتخفيض."]
+    related: [cbe_odr, cpi_urban_yoy]
+
+  remittances:
+    what: ["Money Egyptians working abroad send home in a month — Egypt's biggest single dollar source.", "الفلوس اللي المصريين اللي شغالين برة بيبعتوها في الشهر، وهي أكبر مصدر دولار لمصر."]
+    drivers: ["Jobs and pay in the Gulf, and trust in the official rate (when the official and parallel rates are close, more money goes through banks).", "الشغل والمرتبات في الخليج، والثقة في السعر الرسمي: لما الرسمي والموازي قريبين الفلوس بتعدي على البنوك أكتر."]
+    up: ["More dollars through banks — direct support for the pound.", "دولارات أكتر داخلة البنوك، ودعم مباشر للجنيه."]
+    down: ["Fewer dollars; often a sign that money is going through the parallel market.", "دولارات أقل، وساعات معناه إن الفلوس بتروح للسوق الموازية."]
+    related: [saudi_pmi, uae_pmi, fx_parallel, gold_gap_pct]
+  remittances_yoy:
+    basis: level
+    pivot: 0
+    what: ["Remittances growth versus the same month last year.", "نمو التحويلات مقارنة بنفس الشهر السنة اللي فاتت."]
+    drivers: ["Gulf economies and trust in the official rate.", "اقتصاد الخليج والثقة في السعر الرسمي."]
+    up: ["Above 20% is a strong inflow.", "فوق 20% يعتبر تدفق قوي."]
+    down: ["Negative growth is a warning sign for dollar supply.", "النمو السالب إنذار لمعروض الدولار."]
+    related: [remittances, saudi_pmi]
+  remittances_ytd:
+    what: ["Remittances so far this calendar year.", "التحويلات من أول السنة لحد آخر شهر متاح."]
+    drivers: ["Same as monthly remittances.", "نفس محركات التحويلات الشهرية."]
+    up: ["More dollar supply.", "معروض دولار أكتر."]
+    down: ["Less dollar supply.", "معروض دولار أقل."]
+    related: [remittances]
+  remittances_12m_sum:
+    what: ["Remittances over the last 12 months combined.", "مجموع التحويلات في آخر 12 شهر."]
+    drivers: ["Same as monthly remittances.", "نفس المحركات."]
+    up: ["Trend improving.", "الاتجاه بيتحسن."]
+    down: ["Trend weakening.", "الاتجاه بيضعف."]
+    related: [remittances]
+  bop_ca_fy:
+    basis: level
+    pivot: 0
+    what: ["Current-account balance for the fiscal year: trade, services, income and remittances with the rest of the world. Negative = deficit.", "رصيد الحساب الجاري في السنة المالية: التجارة والخدمات والدخل والتحويلات مع العالم. السالب يعني عجز."]
+    drivers: ["Imports (fuel, food, machinery) versus exports, tourism, Suez fees and remittances; interest paid abroad.", "الواردات مقابل الصادرات والسياحة وقناة السويس والتحويلات، والفوايد اللي بتتدفع برة."]
+    up: ["A smaller deficit means less need to borrow or sell assets for dollars.", "العجز الأصغر يعني احتياج أقل للاقتراض أو بيع أصول عشان الدولار."]
+    down: ["A wider deficit must be financed by FDI, portfolio money or debt — otherwise the pound weakens.", "العجز الأكبر لازم يتغطى باستثمار أو قروض، وإلا الجنيه يضعف."]
+    related: [imports_oil_fy, imports_nonoil_fy, remittances_fy, tourism_receipts_fy, suez_receipts_fy]
+  bop_overall_fy:
+    basis: level
+    pivot: 0
+    what: ["Overall balance of payments: all dollars in minus out for the fiscal year (surplus adds to reserves).", "الميزان الكلي: كل الدولارات الداخلة ناقص الخارجة في السنة المالية، والفائض بيزود الاحتياطي."]
+    drivers: ["The current account plus investment and borrowing flows.", "الحساب الجاري زائد الاستثمار والقروض."]
+    up: ["Surplus: reserves rise.", "فائض: الاحتياطي بيزيد."]
+    down: ["Deficit: reserves fall.", "عجز: الاحتياطي بيقل."]
+    related: [bop_ca_fy, fdi_net_fy, portfolio_net_fy]
+  fdi_net_fy:
+    what: ["Net foreign direct investment (factories, companies, land deals such as Ras El Hekma).", "صافي الاستثمار الأجنبي المباشر زي المصانع والشركات وصفقات الأراضي زي رأس الحكمة."]
+    drivers: ["Big Gulf deals, privatization and the business climate.", "الصفقات الخليجية الكبيرة والطروحات ومناخ الاستثمار."]
+    up: ["Stable, long-term dollars — the best way to finance a deficit.", "دولارات مستقرة وطويلة الأجل، وأحسن طريقة لتغطية العجز."]
+    down: ["More reliance on hot money and debt.", "اعتماد أكتر على الأموال الساخنة والقروض."]
+    related: [bop_ca_fy]
+  portfolio_net_fy:
+    basis: level
+    pivot: 0
+    what: ["Net portfolio flows: foreign buying of Egyptian T-bills, bonds and shares (hot money).", "صافي استثمارات الحافظة: شراء الأجانب لأذون الخزانة والسندات والأسهم، يعني الأموال الساخنة."]
+    drivers: ["Real interest rates, exchange-rate expectations and global risk mood.", "الفايدة الحقيقية وتوقعات سعر الصرف ومزاج الأسواق العالمية."]
+    up: ["Inflows support the pound — but can leave quickly.", "التدفقات بتدعم الجنيه، بس ممكن تخرج بسرعة."]
+    down: ["Outflows drain dollars fast (as in 2022).", "الخروج بيسحب الدولارات بسرعة زي اللي حصل في 2022."]
+    related: [real_headline, vix, em_spread_proxy]
+  tourism_receipts_fy:
+    what: ["Tourism revenues for the fiscal year (balance of payments).", "إيرادات السياحة في السنة المالية."]
+    drivers: ["Regional security, European economies, flight connections and prices.", "الأمان في المنطقة واقتصاد أوروبا والطيران والأسعار."]
+    up: ["More dollars from visitors.", "دولارات أكتر من السياح."]
+    down: ["Regional wars usually hit tourism first.", "الحروب في المنطقة غالبا أول حاجة بتضرب السياحة."]
+    related: [gpr_egypt, euro_area_hicp]
+  suez_receipts_fy:
+    what: ["Suez Canal transit receipts for the fiscal year (balance-of-payments definition).", "إيرادات المرور في قناة السويس في السنة المالية."]
+    drivers: ["Ships rerouting around Africa when the Red Sea is unsafe; global trade volumes.", "السفن اللي بتلف حوالين أفريقيا لما البحر الأحمر يبقى مش آمن، وحجم التجارة العالمية."]
+    up: ["More canal dollars.", "دولارات أكتر من القناة."]
+    down: ["Fewer ships = fewer dollars.", "سفن أقل يعني دولارات أقل."]
+    related: [suez_ratio_7dma, babelmandeb_ratio_7dma]
+  suez_ratio_7dma:
+    basis: level
+    pivot: 0.6
+    what: ["Ships through the Suez Canal (7-day average) compared with the 2023 average. 1.0 = normal.", "عدد السفن في قناة السويس (متوسط 7 أيام) مقارنة بمتوسط 2023. واحد يعني طبيعي."]
+    drivers: ["Red Sea and Bab el-Mandeb security (Houthi attacks), shipping costs and insurance.", "الأمان في البحر الأحمر وباب المندب وهجمات الحوثيين وتكلفة الشحن والتأمين."]
+    up: ["Recovery toward normal brings canal revenue back.", "الرجوع للطبيعي بيرجع إيرادات القناة."]
+    down: ["Below 0.6 means Suez revenue — a key dollar source — is depressed.", "أقل من 0.6 يعني إيرادات القناة، وهي مصدر دولار مهم، ضعيفة."]
+    related: [babelmandeb_ratio_7dma, gpr_daily]
+  babelmandeb_ratio_7dma:
+    basis: level
+    pivot: 0.6
+    what: ["Ships through Bab el-Mandeb (southern Red Sea entrance) versus 2023.", "السفن في باب المندب، مدخل البحر الأحمر من الجنوب، مقارنة بسنة 2023."]
+    drivers: ["Attacks on shipping and regional conflict.", "الهجمات على السفن والنزاعات في المنطقة."]
+    up: ["Safer route — more traffic reaches Suez.", "الطريق أأمن والسفن بتوصل للقناة."]
+    down: ["Ships avoid the Red Sea, which also hits Suez.", "السفن بتبعد عن البحر الأحمر وده بيضرب القناة."]
+    related: [suez_ratio_7dma]
+  hormuz_ratio_7dma:
+    basis: level
+    pivot: 0.5
+    what: ["Ships through the Strait of Hormuz (Gulf oil route) versus 2023.", "السفن في مضيق هرمز، طريق بترول الخليج، مقارنة بسنة 2023."]
+    drivers: ["Iran-related conflict and tanker security.", "النزاع مع إيران وأمان الناقلات."]
+    up: ["Oil flows normalizing — lower oil-price risk.", "البترول بيعدي طبيعي ومخاطر الأسعار أقل."]
+    down: ["Disruption pushes oil prices up, raising Egypt's import bill.", "التعطيل بيغلي البترول وبيزود فاتورة استيراد مصر."]
+    related: [brent, brent_fut]
+
+  ext_debt_stock:
+    what: ["Egypt's total external debt (USD bn).", "إجمالي الدين الخارجي لمصر بالمليار دولار."]
+    drivers: ["New borrowing (IMF, Eurobonds, Gulf deposits) versus repayments.", "الاقتراض الجديد مقابل السداد."]
+    up: ["More debt to service later.", "ديون أكتر هتتدفع بعدين."]
+    down: ["Lower future debt service.", "خدمة دين أقل في المستقبل."]
+    related: [ext_debt_gdp, debt_service_next_year_to_nir]
+  debt_service_next_year_to_nir:
+    what: ["Next calendar year's scheduled external debt payments as a % of reserves.", "أقساط وفوايد الدين الخارجي المستحقة السنة الجاية كنسبة من الاحتياطي."]
+    drivers: ["Debt schedule and reserves.", "جدول الديون والاحتياطي."]
+    up: ["A bigger 'debt wall' relative to buffers.", "حيطة ديون أكبر مقارنة بالسند."]
+    down: ["More comfortable.", "الوضع أريح."]
+    related: [nir, ext_debt_stock]
+  budget_oil_assumption:
+    what: ["The oil price the government assumed when writing the budget.", "سعر البترول اللي الحكومة حسبت عليه الموازنة."]
+    drivers: ["Set once a year in the budget.", "بيتحدد مرة في السنة مع الموازنة."]
+    up: ["—", "—"]
+    down: ["—", "—"]
+    related: [brent, brent_gap]
+  tbill_12m_yield:
+    what: ["Interest the government pays to borrow for one year in pounds (T-bill auction yield).", "الفايدة اللي الحكومة بتدفعها عشان تستلف بالجنيه لمدة سنة."]
+    drivers: ["CBE rates, inflation expectations, the government's borrowing needs and foreign demand.", "فايدة البنك المركزي وتوقعات التضخم واحتياج الحكومة للاقتراض وطلب الأجانب."]
+    up: ["Higher borrowing costs for the budget; also attracts carry investors.", "تكلفة اقتراض أعلى على الموازنة، وفي نفس الوقت بتجذب المستثمر الأجنبي."]
+    down: ["Cheaper government borrowing; often follows rate-cut expectations.", "اقتراض أرخص للحكومة، وغالبا بيجي مع توقع تخفيض الفايدة."]
+    related: [cbe_odr, real_headline, tbill_12m_btc]
+
+  pmi:
+    basis: level
+    pivot: 50
+    what: ["S&P Global Egypt PMI: a monthly survey of non-oil private companies. Above 50 = growth, below 50 = contraction.", "مؤشر مديري المشتريات: استطلاع شهري للشركات الخاصة غير البترولية. فوق 50 نمو وتحت 50 انكماش."]
+    drivers: ["Demand, input costs (often the exchange rate), and import availability.", "الطلب وتكلفة المدخلات اللي غالبا مرتبطة بالدولار وتوفر المستورد."]
+    up: ["Business activity improving — more jobs and output.", "النشاط بيتحسن، وشغل وإنتاج أكتر."]
+    down: ["Activity shrinking; makes the CBE's choice between fighting inflation and supporting growth harder.", "النشاط بينكمش، وده بيصعب على البنك المركزي الاختيار بين محاربة التضخم ودعم النمو."]
+    related: [fx_chg_3m, cbe_odr, brent_egp]
+  gdp_growth:
+    what: ["Real economic growth in a quarter versus a year earlier.", "نمو الاقتصاد الحقيقي في ربع سنة مقارنة بنفس الربع السنة اللي فاتت."]
+    drivers: ["Consumption, investment, exports, Suez and tourism.", "الاستهلاك والاستثمار والصادرات والقناة والسياحة."]
+    up: ["Stronger growth, more jobs.", "نمو أقوى وشغل أكتر."]
+    down: ["Slower growth.", "نمو أبطأ."]
+    related: [pmi, suez_ratio_7dma]
+  saudi_pmi:
+    basis: level
+    pivot: 50
+    what: ["Saudi Arabia's private-sector PMI (50 = no change).", "مؤشر مديري المشتريات للسعودية."]
+    drivers: ["Oil revenues and government spending in Saudi Arabia.", "إيرادات البترول والإنفاق الحكومي في السعودية."]
+    up: ["Healthy Gulf jobs support Egyptian remittances.", "شغل كويس في الخليج بيدعم تحويلات المصريين."]
+    down: ["Weak Gulf activity is a risk to remittances and Gulf investment in Egypt.", "ضعف الخليج خطر على التحويلات والاستثمار الخليجي في مصر."]
+    related: [remittances, brent]
+  uae_pmi:
+    basis: level
+    pivot: 50
+    what: ["UAE private-sector PMI (50 = no change).", "مؤشر مديري المشتريات للإمارات."]
+    drivers: ["Trade, tourism and real estate in the UAE.", "التجارة والسياحة والعقارات في الإمارات."]
+    up: ["Supports remittances and investment.", "بيدعم التحويلات والاستثمار."]
+    down: ["Risk to remittances.", "خطر على التحويلات."]
+    related: [remittances]
+
+  brent:
+    what: ["Price of Brent crude oil (dated spot, USD per barrel, via FRED/EIA).", "سعر خام برنت الفوري بالدولار للبرميل."]
+    drivers: ["Wars and supply disruptions (Hormuz, Red Sea), OPEC+ decisions and global demand.", "الحروب وتعطل الإمدادات في هرمز والبحر الأحمر وقرارات أوبك بلس والطلب العالمي."]
+    up: ["Egypt imports fuel: a higher price raises the import bill (dollars), the fuel-subsidy bill (budget) and, later, pump prices (inflation).", "مصر بتستورد وقود، فالزيادة بتكبر فاتورة الاستيراد بالدولار ودعم الوقود في الموازنة، وبعدين أسعار البنزين."]
+    down: ["Cheaper oil eases pressure on dollars, the budget and inflation.", "البترول الأرخص بيخفف الضغط على الدولار والموازنة والتضخم."]
+    related: [hormuz_ratio_7dma, gpr_daily, brent_fut]
+  brent_fut:
+    what: ["Brent front-month futures price (Yahoo). The headline 'oil price' most news quotes.", "سعر عقود برنت الآجلة، وده السعر اللي الأخبار بتقوله غالبا."]
+    drivers: ["Same as Brent spot, plus market expectations.", "نفس محركات برنت الفوري زائد توقعات السوق."]
+    up: ["Same as Brent.", "زي برنت."]
+    down: ["Same as Brent.", "زي برنت."]
+    related: [brent]
+  brent_gap:
+    basis: level
+    pivot: 0
+    what: ["How far Brent is above (+) or below (−) the budget's oil assumption, in $ per barrel.", "البترول أعلى أو أقل من سعر الموازنة بكام دولار للبرميل."]
+    drivers: ["Oil prices.", "أسعار البترول."]
+    up: ["Every +$10 adds roughly 0.3% of GDP to the current-account deficit (IMF rule of thumb) and strains the budget.", "كل 10 دولار زيادة بيزودوا عجز الحساب الجاري حوالي 0.3% من الناتج حسب قاعدة صندوق النقد، وبيضغطوا على الموازنة."]
+    down: ["Room in the budget and less dollar demand.", "مساحة في الموازنة وطلب أقل على الدولار."]
+    related: [brent, budget_oil_assumption]
+  brent_egp_qavg_chg:
+    basis: level
+    pivot: 0
+    what: ["Average oil price in pounds this quarter versus last quarter — what the fuel-pricing committee looks at.", "متوسط سعر البترول بالجنيه في الربع ده مقارنة باللي فات، وده اللي لجنة تسعير الوقود بتبص عليه."]
+    drivers: ["Oil prices and the exchange rate.", "سعر البترول وسعر الدولار."]
+    up: ["A big rise with frozen pump prices means a hike is being deferred.", "الزيادة الكبيرة مع تثبيت الأسعار معناها زيادة البنزين متأجلة."]
+    down: ["Less pressure for fuel price hikes.", "ضغط أقل لرفع أسعار الوقود."]
+    related: [brent, fx_cbe_official, fuel_92]
+  ttf_fut:
+    what: ["European natural gas price (TTF). A benchmark for the LNG Egypt imports.", "سعر الغاز الأوروبي، ومرجع لسعر الغاز المسال اللي مصر بتستورده."]
+    drivers: ["European storage, weather and supply disruptions.", "المخزون في أوروبا والجو وتعطل الإمدادات."]
+    up: ["Egypt's LNG import bill rises; summer power cuts become a risk.", "فاتورة استيراد الغاز بتزيد، وخطر تخفيف الأحمال في الصيف."]
+    down: ["Cheaper gas imports.", "استيراد غاز أرخص."]
+    related: [lng_imports]
+  wheat:
+    what: ["Global wheat futures price. Egypt is one of the world's largest wheat importers (subsidized bread).", "سعر القمح العالمي. مصر من أكبر مستوردي القمح في العالم عشان العيش المدعم."]
+    drivers: ["Black Sea harvests and exports, weather, the dollar.", "محاصيل وصادرات البحر الأسود والجو والدولار."]
+    up: ["Higher import bill and bread-subsidy cost.", "فاتورة استيراد أعلى وتكلفة دعم العيش بتزيد."]
+    down: ["Relief for the budget and dollars.", "راحة للموازنة والدولار."]
+    related: [fx_cbe_official]
+  fuel_92:
+    what: ["Pump price of 92-octane gasoline in Egypt (set by the fuel-pricing committee).", "سعر لتر بنزين 92 في مصر، وبتحدده لجنة تسعير الوقود."]
+    drivers: ["Oil prices in pounds and subsidy policy; reviewed quarterly.", "سعر البترول بالجنيه وسياسة الدعم، وبيتراجع كل ربع سنة."]
+    up: ["Hikes raise transport and food costs (second-round inflation).", "الزيادة بتغلي المواصلات والأكل."]
+    down: ["—", "—"]
+    related: [brent_egp_qavg_chg]
+
+  gold_eg_21k:
+    what: ["Price of one gram of 21-karat gold in Egypt (the most traded karat).", "سعر جرام الدهب عيار 21 في مصر، وده الأكتر تداول."]
+    drivers: ["Global gold price × dollar rate, plus local demand (hedging, weddings).", "سعر الدهب العالمي في سعر الدولار، زائد الطلب المحلي للتحوط والأفراح."]
+    up: ["Can reflect a rising world gold price, a weaker pound, or extra local demand — compare with the gold-implied rate.", "ممكن يكون الدهب العالمي طلع أو الجنيه ضعف أو الطلب المحلي زاد، قارنه بدولار الدهب."]
+    down: ["Lower local gold price.", "سعر الدهب المحلي قل."]
+    related: [xauusd_spot, fx_cbe_official, gold_gap_pct]
+  xauusd:
+    what: ["World gold price (USD per ounce).", "سعر أوقية الدهب العالمي بالدولار."]
+    drivers: ["US interest rates, the dollar, wars and central-bank buying.", "الفايدة الأمريكية والدولار والحروب وشراء البنوك المركزية."]
+    up: ["Raises local gold prices and the value of the CBE's gold reserves.", "بيرفع سعر الدهب المحلي وقيمة دهب البنك المركزي."]
+    down: ["The opposite.", "العكس."]
+    related: [dxy, us10y, gpr_daily]
+  gold_local_premium_pct:
+    basis: level
+    pivot: 0
+    what: ["How much more (or less) local 21K gold costs than its 'fair' price from world gold × official rate.", "الدهب المحلي أغلى أو أرخص بنسبة قد إيه من سعره العادل المحسوب من السعر العالمي والدولار الرسمي."]
+    drivers: ["Local demand and devaluation fears.", "الطلب المحلي والخوف من التخفيض."]
+    up: ["A premium above 3% for days = devaluation hedging.", "علاوة فوق 3% كذا يوم يعني تحوط من التخفيض."]
+    down: ["A discount = dollar demand easing.", "خصم يعني الطلب على الدولار بيهدى."]
+    related: [gold_gap_pct]
+
+  fed_funds:
+    what: ["The US Federal Reserve's policy rate (effective).", "سعر الفايدة الأمريكي."]
+    drivers: ["US inflation and jobs.", "التضخم والوظايف في أمريكا."]
+    up: ["A stronger dollar and less money flowing to emerging markets like Egypt.", "الدولار بيقوى والفلوس اللي بتروح للأسواق الناشئة زي مصر بتقل."]
+    down: ["More appetite for emerging-market assets.", "إقبال أكتر على أصول الأسواق الناشئة."]
+    related: [us10y, dxy]
+  us10y:
+    what: ["US 10-year government bond yield — the world's benchmark borrowing cost.", "عائد السندات الأمريكية لعشر سنين، وده المرجع لتكلفة الاقتراض في العالم."]
+    drivers: ["US inflation, Fed expectations, US deficits.", "التضخم الأمريكي وتوقعات الفيدرالي والعجز الأمريكي."]
+    up: ["Makes Egypt's borrowing abroad more expensive.", "بيغلي اقتراض مصر من برة."]
+    down: ["Cheaper global borrowing.", "اقتراض عالمي أرخص."]
+    related: [fed_funds, em_spread_proxy]
+  dxy:
+    what: ["US dollar index against major currencies (euro, yen, pound sterling…).", "مؤشر الدولار مقابل العملات الكبيرة زي اليورو والين والإسترليني."]
+    drivers: ["US rates and global risk mood.", "الفايدة الأمريكية ومزاج الأسواق."]
+    up: ["Usually tighter conditions for emerging markets. Note: USD/EGP depends mostly on Egypt's own dollar supply, not the DXY.", "غالبا ظروف أصعب للأسواق الناشئة. لكن سعر الدولار في مصر بيعتمد أكتر على العرض والطلب جوه مصر."]
+    down: ["Easier conditions for emerging markets.", "ظروف أسهل للأسواق الناشئة."]
+    related: [fed_funds, us10y]
+  vix:
+    what: ["The 'fear index' — expected volatility of US stocks.", "مؤشر الخوف في الأسواق الأمريكية."]
+    drivers: ["Market shocks, wars, recessions.", "الصدمات والحروب والركود."]
+    up: ["Above 25 = global risk-off: investors pull money from emerging markets.", "فوق 25 يعني المستثمرين خايفين وبيسحبوا فلوسهم من الأسواق الناشئة."]
+    down: ["Calm markets, more appetite for risk.", "أسواق هادية وإقبال على المخاطرة."]
+    related: [em_spread_proxy, msci_em_proxy]
+  em_spread_proxy:
+    what: ["Extra yield investors demand on emerging-market corporate bonds (proxy for EM risk).", "العائد الزيادة اللي المستثمرين بيطلبوه على سندات شركات الأسواق الناشئة، كمؤشر للمخاطر."]
+    drivers: ["Global risk mood and US rates.", "مزاج الأسواق والفايدة الأمريكية."]
+    up: ["EM borrowing costs rise — harder for Egypt to refinance.", "تكلفة الاقتراض بتزيد وصعب على مصر تجدد ديونها."]
+    down: ["Easier financing.", "تمويل أسهل."]
+    related: [vix, us10y]
+  euro_area_hicp:
+    what: ["Inflation in the euro area (Egypt's biggest tourism and export market).", "التضخم في منطقة اليورو، وهي أكبر سوق للسياحة والصادرات المصرية."]
+    drivers: ["Energy prices and European demand.", "أسعار الطاقة والطلب الأوروبي."]
+    up: ["The ECB may keep rates high; European demand could slow.", "البنك الأوروبي ممكن يسيب الفايدة عالية، والطلب الأوروبي ممكن يبطأ."]
+    down: ["Room for European rate cuts.", "مساحة لتخفيض الفايدة في أوروبا."]
+    related: [tourism_receipts_fy]
+
+  gpr_daily:
+    what: ["Global geopolitical risk index (daily), built from news about wars, terrorism and tensions.", "مؤشر المخاطر الجيوسياسية العالمي اليومي، محسوب من الأخبار عن الحروب والإرهاب والتوترات."]
+    drivers: ["Wars and threats worldwide — recently the Iran/Israel/Gulf situation.", "الحروب والتهديدات في العالم، وآخرها الوضع في إيران وإسرائيل والخليج."]
+    up: ["Higher oil prices, weaker tourism and capital leaving emerging markets.", "البترول بيغلى والسياحة بتقل والفلوس بتخرج من الأسواق الناشئة."]
+    down: ["De-escalation helps tourism, Suez and investor appetite.", "التهدئة بتساعد السياحة والقناة والاستثمار."]
+    related: [brent, hormuz_ratio_7dma, suez_ratio_7dma]
+  gpr_egypt:
+    what: ["Geopolitical risk index for Egypt specifically (monthly).", "مؤشر المخاطر الجيوسياسية الخاص بمصر، شهري."]
+    drivers: ["News linking Egypt to conflicts and tensions.", "الأخبار اللي بتربط مصر بالنزاعات والتوترات."]
+    up: ["Hits tourism and investor confidence.", "بيأثر على السياحة وثقة المستثمرين."]
+    down: ["Calmer environment.", "بيئة أهدى."]
+    related: [gpr_daily, tourism_receipts_fy]
+  gdelt_egypt_economy_tone:
+    what: ["Average tone of global news about Egypt's economy (negative = gloomy coverage).", "متوسط نبرة الأخبار العالمية عن اقتصاد مصر، والسالب يعني أخبار متشائمة."]
+    drivers: ["Big news events: devaluations, IMF deals, wars, ratings.", "الأحداث الكبيرة زي التخفيض واتفاقات صندوق النقد والحروب والتصنيف."]
+    up: ["Better sentiment.", "مزاج أحسن."]
+    down: ["A sharp drop with heavy coverage can precede market stress (weak signal).", "النزول الحاد مع أخبار كتير ممكن يسبق ضغط في السوق، بس إشارة ضعيفة."]
+    related: [gpr_egypt]
+
+  eda_signal:
+    basis: level
+    pivot: 10
+    what: ["My reconstruction of the Egyptian Drug Authority's repricing formula (Decision 480/2026): 60% exchange-rate change + 30% urban inflation + 10% change in the CBE deposit rate over 6 months.", "إعادة حساب لمعادلة هيئة الدواء لإعادة التسعير: 60% تغير سعر الصرف و30% التضخم و10% تغير فايدة الإيداع في 6 شهور."]
+    drivers: ["The pound, inflation and interest rates.", "الجنيه والتضخم والفايدة."]
+    up: ["At ≥10% sustained for 45 days, companies may become eligible to request drug price increases.", "لو وصل 10% وفضل 45 يوم، الشركات ممكن تستحق تطلب زيادة أسعار الأدوية."]
+    down: ["Less pressure for drug price increases.", "ضغط أقل لزيادة أسعار الأدوية."]
+    related: [fx_cbe_official, cpi_urban_mom, cbe_odr]
+  cpi_health_yoy:
+    what: ["Inflation in health services and products (nationwide).", "التضخم في بند الصحة على مستوى الجمهورية."]
+    drivers: ["Drug pricing decisions, imported supplies and doctors' fees.", "قرارات تسعير الأدوية والمستلزمات المستوردة وأجور الأطباء."]
+    up: ["Healthcare gets more expensive for households.", "العلاج بيغلى على الأسر."]
+    down: ["Healthcare costs stabilize.", "تكلفة العلاج بتستقر."]
+    related: [eda_signal, fx_cbe_official]
+
+  foreign_tbills_holdings:
+    what: ["How much Egyptian government debt (T-bills) foreign investors hold — the main pool of 'hot money'.", "حجم أذون الخزانة المصرية اللي في إيد المستثمرين الأجانب، وده أكبر حوض للأموال الساخنة."]
+    drivers: ["Real interest rates, exchange-rate expectations and global risk mood.", "الفايدة الحقيقية وتوقعات سعر الصرف ومزاج الأسواق العالمية."]
+    up: ["More dollars came in to buy T-bills — supports the pound, but can reverse fast.", "دولارات أكتر دخلت تشتري أذون، وده بيدعم الجنيه بس ممكن يخرج بسرعة."]
+    down: ["A fall of more than 5% in a month is an outflow warning.", "لو قل أكتر من 5% في شهر يبقى إنذار خروج أموال."]
+    related: [real_headline, vix, fx_cbe_official]
+  cbe_mpc_decision:
+    what: ["Outcome of the latest Monetary Policy Committee meeting: −1 cut, 0 hold, +1 hike.", "نتيجة آخر اجتماع للجنة السياسة النقدية: سالب واحد تخفيض، صفر تثبيت، واحد رفع."]
+    drivers: ["Inflation outlook, the pound and growth.", "توقعات التضخم والجنيه والنمو."]
+    up: ["A hike: tighter money to fight inflation or defend the pound.", "رفع: تشديد عشان يحارب التضخم أو يسند الجنيه."]
+    down: ["A cut: easier money to support growth.", "تخفيض: تيسير عشان يدعم النمو."]
+    related: [cbe_odr, cpi_core_yoy]
+  m2:
+    what: ["Growth of broad money (cash plus bank deposits) over a year.", "نمو السيولة المحلية (الكاش وودائع البنوك) في سنة."]
+    drivers: ["Bank lending to government and companies, and dollar inflows converted to pounds.", "قروض البنوك للحكومة والشركات والدولارات اللي اتحولت لجنيه."]
+    up: ["Fast money growth can fuel inflation.", "نمو السيولة السريع ممكن يزود التضخم."]
+    down: ["Slower money growth cools demand.", "نمو أبطأ بيهدي الطلب."]
+    related: [cpi_core_yoy, credit_private]
+  credit_private:
+    what: ["Growth of bank loans to private companies and households.", "نمو قروض البنوك للشركات الخاصة والأفراد."]
+    drivers: ["Interest rates, business confidence and how much banks lend to the government instead.", "الفايدة وثقة الشركات وقد إيه البنوك بتسلف الحكومة بدلهم."]
+    up: ["More investment and activity.", "استثمار ونشاط أكتر."]
+    down: ["Businesses are borrowing less — growth may slow.", "الشركات بتستلف أقل والنمو ممكن يبطأ."]
+    related: [credit_gov, cbe_odr, pmi]
+  credit_gov:
+    what: ["Growth of bank loans to the government.", "نمو قروض البنوك للحكومة."]
+    drivers: ["The budget deficit and T-bill issuance.", "عجز الموازنة وإصدار أذون الخزانة."]
+    up: ["If it grows much faster than private credit, the state is crowding out businesses.", "لو بيزيد أسرع بكتير من قروض القطاع الخاص يبقى الحكومة بتزاحم الشركات على التمويل."]
+    down: ["More room for private borrowing.", "مساحة أكبر لاقتراض القطاع الخاص."]
+    related: [credit_private, tbill_12m_yield]
+  nfa_banks:
+    what: ["Net foreign assets of the whole banking system (CBE + commercial banks): dollars owned minus dollars owed.", "صافي الأصول الأجنبية للجهاز المصرفي كله: الدولارات اللي عندهم ناقص اللي عليهم."]
+    drivers: ["Dollar inflows and outflows through banks.", "الدولارات الداخلة والخارجة من البنوك."]
+    up: ["Banks are building dollar buffers.", "البنوك بتبني سند دولاري."]
+    down: ["A falling or negative position is a sign of hidden FX stress (as in 2022–23).", "لو بيقل أو سالب يبقى فيه ضغط مستخبي على الدولار زي 2022 و2023."]
+    related: [nir, fx_cbe_official]
+  nfa_cbe:
+    what: ["Net foreign assets of the Central Bank alone.", "صافي الأصول الأجنبية للبنك المركزي لوحده."]
+    drivers: ["Reserves minus the CBE's foreign liabilities (e.g. Gulf deposits).", "الاحتياطي ناقص التزامات البنك المركزي الأجنبية زي الودائع الخليجية."]
+    up: ["Stronger central-bank position.", "وضع البنك المركزي أقوى."]
+    down: ["Weaker position.", "وضع أضعف."]
+    related: [nir]
+  nir_fx:
+    what: ["Foreign-currency part of the reserves (USD mn).", "جزء العملات الأجنبية في الاحتياطي."]
+    drivers: ["New inflows and debt payments.", "التدفقات الجديدة وسداد الديون."]
+    up: ["New money, not just gold revaluation.", "فلوس جديدة مش مجرد فرق تقييم دهب."]
+    down: ["Dollars were used (debt, defending the pound).", "دولارات اتصرفت على ديون أو سند للجنيه."]
+    related: [nir, nir_gold]
+  nir_sdr:
+    what: ["Special Drawing Rights held (IMF reserve asset).", "حقوق السحب الخاصة من صندوق النقد."]
+    drivers: ["IMF disbursements and repayments.", "صرف شرائح صندوق النقد والسداد."]
+    up: ["IMF money arrived.", "فلوس صندوق النقد وصلت."]
+    down: ["Used for IMF repayments.", "اتصرفت في سداد الصندوق."]
+    related: [nir]
+  infl_target:
+    what: ["The CBE's inflation target (midpoint).", "مستهدف التضخم للبنك المركزي."]
+    drivers: ["Set by the CBE for a target date.", "البنك المركزي بيحدده لتاريخ معين."]
+    up: ["—", "—"]
+    down: ["—", "—"]
+    related: [cpi_urban_yoy]
+  tourism_arrivals_ytd:
+    what: ["Number of tourists so far this year (millions).", "عدد السياح من أول السنة بالمليون."]
+    drivers: ["Regional security, flights, European and Gulf demand.", "الأمان في المنطقة والطيران والطلب من أوروبا والخليج."]
+    up: ["More dollars from tourism ahead.", "دولارات أكتر من السياحة جاية."]
+    down: ["Fewer visitors, fewer dollars.", "سياح أقل ودولارات أقل."]
+    related: [gpr_egypt]
+  tourism_receipts_ytd:
+    what: ["Tourism revenue so far this year (USD bn).", "إيرادات السياحة من أول السنة بالمليار دولار."]
+    drivers: ["Visitor numbers and spending.", "عدد السياح وصرفهم."]
+    up: ["More dollar supply.", "معروض دولار أكتر."]
+    down: ["Less dollar supply.", "معروض دولار أقل."]
+    related: [tourism_arrivals_ytd]
+  ext_debt_gdp:
+    what: ["External debt as a share of the economy (GDP).", "الدين الخارجي كنسبة من حجم الاقتصاد."]
+    drivers: ["Borrowing, growth and the exchange rate (a weaker pound shrinks GDP in dollars).", "الاقتراض والنمو وسعر الصرف، لأن ضعف الجنيه بيصغر الناتج بالدولار."]
+    up: ["Heavier debt burden.", "عبء ديون أتقل."]
+    down: ["Lighter burden.", "عبء أخف."]
+    related: [ext_debt_stock]
+  ext_debt_short_term:
+    what: ["External debt due within one year.", "الدين الخارجي المستحق خلال سنة."]
+    drivers: ["Short-term borrowing and trade credit.", "الاقتراض قصير الأجل وتسهيلات التجارة."]
+    up: ["More debt to roll over soon — compare with reserves.", "ديون أكتر لازم تتجدد قريب، قارنها بالاحتياطي."]
+    down: ["Less refinancing risk.", "مخاطر تجديد أقل."]
+    related: [nir]
+  ext_debt_service_actual:
+    what: ["Principal and interest Egypt actually paid on external debt in the stated period.", "الأقساط والفوايد اللي مصر دفعتها فعلا على الدين الخارجي في الفترة المذكورة."]
+    drivers: ["The debt schedule.", "جدول الديون."]
+    up: ["More dollars leaving for debt.", "دولارات أكتر خارجة للديون."]
+    down: ["Less debt drain.", "سحب أقل للديون."]
+    related: [nir, ext_debt_stock]
+  ext_debt_service_sched:
+    what: ["Scheduled external debt payments for a calendar year (public and guaranteed, medium/long term).", "أقساط وفوايد الدين الخارجي المجدولة في سنة."]
+    drivers: ["Past borrowing.", "الاقتراض اللي فات."]
+    up: ["A bigger 'debt wall' to finance.", "حيطة ديون أكبر محتاجة تمويل."]
+    down: ["Easier year ahead.", "سنة أسهل."]
+    related: [nir, debt_service_next_year_to_nir]
+  budget_balance:
+    what: ["Government budget balance as % of GDP (negative = deficit).", "رصيد الموازنة كنسبة من الناتج، والسالب عجز."]
+    drivers: ["Taxes versus spending; interest payments are the biggest item.", "الضرايب مقابل الإنفاق، والفوايد أكبر بند."]
+    up: ["Smaller deficit — less borrowing.", "عجز أصغر واقتراض أقل."]
+    down: ["Bigger deficit — more borrowing and higher yields.", "عجز أكبر واقتراض أكتر وعوايد أعلى."]
+    related: [interest_to_revenue, tbill_12m_yield]
+  primary_balance:
+    what: ["Budget balance before interest payments (% of GDP) — a key IMF target.", "رصيد الموازنة قبل الفوايد كنسبة من الناتج، وده هدف أساسي لصندوق النقد."]
+    drivers: ["Taxes and non-interest spending.", "الضرايب والإنفاق من غير الفوايد."]
+    up: ["Fiscal discipline — supports IMF reviews.", "انضباط مالي وبيساعد في مراجعات الصندوق."]
+    down: ["Slippage — risk to IMF programme.", "تراجع وخطر على برنامج الصندوق."]
+    related: [budget_balance]
+  gov_debt_gdp:
+    what: ["Total government debt as % of GDP.", "إجمالي الدين الحكومي كنسبة من الناتج."]
+    drivers: ["Deficits, growth, inflation and the exchange rate.", "العجز والنمو والتضخم وسعر الصرف."]
+    up: ["Heavier debt load.", "عبء ديون أتقل."]
+    down: ["Lighter debt load.", "عبء أخف."]
+    related: [budget_balance]
+  interest_to_revenue:
+    what: ["Share of government revenue spent on interest.", "نسبة إيرادات الحكومة اللي بتروح للفوايد."]
+    drivers: ["Interest rates and debt size.", "الفايدة وحجم الدين."]
+    up: ["Above 50%: little left for health, education and investment.", "فوق 50% يعني فاضل قليل للصحة والتعليم والاستثمار."]
+    down: ["More fiscal room.", "مساحة مالية أكبر."]
+    related: [tbill_12m_yield, cbe_odr]
+  dom_debt_maturities:
+    what: ["Pound-denominated government debt (T-bills) maturing next month.", "أذون الخزانة بالجنيه المستحقة الشهر الجاي."]
+    drivers: ["Past issuance.", "الإصدارات اللي فاتت."]
+    up: ["More rollover needs; yields may rise.", "احتياج تجديد أكبر والعوايد ممكن تزيد."]
+    down: ["Less pressure.", "ضغط أقل."]
+    related: [tbill_3m_yield]
+  wb_gdp_growth:
+    what: ["Real GDP growth by calendar year (World Bank).", "نمو الاقتصاد الحقيقي في السنة حسب البنك الدولي."]
+    drivers: ["The whole economy.", "الاقتصاد كله."]
+    up: ["Faster growth.", "نمو أسرع."]
+    down: ["Slower growth.", "نمو أبطأ."]
+    related: [gdp_growth]
+  consensus:
+    what: ["Average economists' forecast (paid data, entered manually).", "متوسط توقعات الاقتصاديين."]
+    drivers: ["Analysts' views.", "آراء المحللين."]
+    up: ["—", "—"]
+    down: ["—", "—"]
+    related: []
+  unemployment:
+    what: ["Share of the labour force without a job (CAPMAS).", "نسبة العاطلين من قوة العمل."]
+    drivers: ["Economic growth and hiring.", "النمو والتعيين."]
+    up: ["Weaker economy and household income.", "اقتصاد ودخل أضعف."]
+    down: ["Stronger labour market.", "سوق عمل أقوى."]
+    related: [pmi, gdp_growth]
+  lng_imports:
+    what: ["Liquefied natural gas Egypt imported in the stated period (billion cubic metres).", "الغاز المسال اللي مصر استوردته في الفترة المذكورة."]
+    drivers: ["Falling domestic gas output, summer power demand and Israeli gas supply.", "تراجع إنتاج الغاز المحلي والطلب على الكهربا في الصيف وإمدادات الغاز الإسرائيلي."]
+    up: ["A bigger dollar bill for energy.", "فاتورة دولارية أكبر للطاقة."]
+    down: ["Less dollar drain.", "سحب دولار أقل."]
+    related: [ttf_fut, brent]
+  gas_import_budget:
+    what: ["Money budgeted for gas imports in the fiscal year.", "المبلغ المخصص لاستيراد الغاز في السنة المالية."]
+    drivers: ["Expected volumes and prices.", "الكميات والأسعار المتوقعة."]
+    up: ["More dollars needed for energy.", "دولارات أكتر مطلوبة للطاقة."]
+    down: ["—", "—"]
+    related: [lng_imports, ttf_fut]
+  lng_cargoes:
+    what: ["Number of LNG ship cargoes imported per month.", "عدد شحنات الغاز المسال الشهرية."]
+    drivers: ["Power demand and domestic gas shortfalls.", "الطلب على الكهربا ونقص الغاز المحلي."]
+    up: ["Higher dollar energy bill.", "فاتورة طاقة أعلى."]
+    down: ["Lower bill.", "فاتورة أقل."]
+    related: [lng_imports]
+  gas_production:
+    what: ["Egypt's own natural gas output.", "إنتاج مصر من الغاز الطبيعي."]
+    drivers: ["Field declines (e.g. Zohr) and new investment.", "تراجع الحقول زي ظهر والاستثمارات الجديدة."]
+    up: ["Fewer imports needed.", "احتياج أقل للاستيراد."]
+    down: ["More imports, more dollars.", "استيراد أكتر ودولارات أكتر."]
+    related: [lng_imports]
+  wheat_reserve_months:
+    what: ["How many months of wheat the strategic reserve covers.", "مخزون القمح يكفي كام شهر."]
+    drivers: ["Purchases and harvest.", "المشتريات والحصاد."]
+    up: ["Food security cushion.", "أمان غذائي أكبر."]
+    down: ["Need to buy more soon (dollars).", "لازم نشتري قريب بالدولار."]
+    related: [wheat]
+  wti:
+    what: ["US oil benchmark (WTI) spot price.", "سعر خام غرب تكساس الأمريكي."]
+    drivers: ["Same global forces as Brent.", "نفس محركات برنت."]
+    up: ["Usually moves with Brent.", "غالبا بيتحرك مع برنت."]
+    down: ["Usually moves with Brent.", "غالبا بيتحرك مع برنت."]
+    related: [brent]
+  wti_fut:
+    what: ["WTI front-month futures (Yahoo).", "عقود خام غرب تكساس الآجلة."]
+    drivers: ["Same as WTI.", "زي غرب تكساس."]
+    up: ["See Brent.", "زي برنت."]
+    down: ["See Brent.", "زي برنت."]
+    related: [brent_fut]
+  henry_hub:
+    what: ["US natural gas price (Henry Hub).", "سعر الغاز الأمريكي."]
+    drivers: ["US weather and LNG exports.", "الجو في أمريكا وصادرات الغاز المسال."]
+    up: ["Can lift global LNG prices.", "ممكن يرفع أسعار الغاز المسال عالميا."]
+    down: ["Cheaper LNG supply.", "غاز مسال أرخص."]
+    related: [ttf_fut]
+  ttf:
+    what: ["European gas price, monthly average (IMF via FRED).", "سعر الغاز الأوروبي الشهري."]
+    drivers: ["European supply and demand.", "العرض والطلب في أوروبا."]
+    up: ["Egypt's LNG bill rises.", "فاتورة الغاز المسال بتزيد."]
+    down: ["Cheaper imports.", "استيراد أرخص."]
+    related: [ttf_fut]
+  wheat_monthly:
+    what: ["Global wheat price, monthly (IMF via FRED).", "سعر القمح العالمي الشهري."]
+    drivers: ["Harvests and exports.", "المحاصيل والصادرات."]
+    up: ["Higher bread-subsidy cost.", "تكلفة دعم العيش أعلى."]
+    down: ["Relief.", "راحة."]
+    related: [wheat]
+  eia_steo_brent:
+    what: ["US Energy Information Administration's Brent forecast.", "توقع إدارة معلومات الطاقة الأمريكية لسعر برنت."]
+    drivers: ["EIA models.", "نماذج الإدارة."]
+    up: ["Higher expected oil costs.", "تكلفة بترول متوقعة أعلى."]
+    down: ["Lower expected costs.", "تكلفة أقل."]
+    related: [brent]
+  freight_wci:
+    what: ["Cost of shipping a container (Drewry index).", "تكلفة شحن حاوية."]
+    drivers: ["Red Sea disruptions, demand.", "تعطيل البحر الأحمر والطلب."]
+    up: ["Imports cost more; ships may avoid Suez.", "الاستيراد بيغلى والسفن ممكن تبعد عن القناة."]
+    down: ["Cheaper trade.", "تجارة أرخص."]
+    related: [suez_ratio_7dma]
+  xauusd_spot:
+    what: ["World gold price captured at the same moment as the local Egyptian gold price (banklive).", "سعر الدهب العالمي في نفس لحظة قراءة السعر المحلي."]
+    drivers: ["Same as world gold.", "زي الدهب العالمي."]
+    up: ["Raises local gold prices.", "بيرفع سعر الدهب المحلي."]
+    down: ["Lowers local gold prices.", "بيقلل سعر الدهب المحلي."]
+    related: [xauusd]
+  xagusd:
+    what: ["World silver price.", "سعر الفضة العالمي."]
+    drivers: ["Industrial demand and gold's moves.", "الطلب الصناعي وحركة الدهب."]
+    up: ["Often moves with gold.", "غالبا بيمشي مع الدهب."]
+    down: ["Often moves with gold.", "غالبا بيمشي مع الدهب."]
+    related: [xauusd]
+  gold_eg_24k:
+    what: ["Price of one gram of 24-karat (pure) gold in Egypt.", "سعر جرام الدهب عيار 24 في مصر."]
+    drivers: ["World gold × dollar rate, plus local demand.", "الدهب العالمي في سعر الدولار زائد الطلب المحلي."]
+    up: ["See 21K gold.", "زي عيار 21."]
+    down: ["See 21K gold.", "زي عيار 21."]
+    related: [gold_eg_21k]
+  gold_eg_pound:
+    what: ["Price of the 8-gram 21K gold pound coin — a popular savings product.", "سعر الجنيه الدهب (8 جرام عيار 21)، وده وسيلة ادخار شائعة."]
+    drivers: ["Same as 21K gold.", "زي عيار 21."]
+    up: ["See 21K gold.", "زي عيار 21."]
+    down: ["See 21K gold.", "زي عيار 21."]
+    related: [gold_eg_21k]
+  cb_gold_buying:
+    what: ["Gold bought by central banks worldwide (World Gold Council).", "الدهب اللي البنوك المركزية في العالم اشترته."]
+    drivers: ["De-dollarization and sanctions risk.", "التقليل من الاعتماد على الدولار ومخاطر العقوبات."]
+    up: ["Supports world gold prices.", "بيدعم سعر الدهب العالمي."]
+    down: ["Less support.", "دعم أقل."]
+    related: [xauusd]
+  us2y:
+    what: ["US 2-year Treasury yield — tracks expected Fed rates.", "عائد السندات الأمريكية لسنتين، وبيعكس توقعات الفايدة الأمريكية."]
+    drivers: ["Fed expectations.", "توقعات الفيدرالي."]
+    up: ["Tighter global money.", "فلوس أقل في العالم."]
+    down: ["Easier global money.", "فلوس أكتر."]
+    related: [fed_funds]
+  euro_area_pmi:
+    what: ["Euro-area business activity survey (50 = no change).", "استطلاع نشاط الشركات في منطقة اليورو."]
+    drivers: ["European demand.", "الطلب الأوروبي."]
+    up: ["Good for Egyptian exports and tourism.", "كويس للصادرات والسياحة المصرية."]
+    down: ["Below 50: headwind for tourism and exports.", "تحت 50 عائق للسياحة والصادرات."]
+    related: [tourism_receipts_fy]
+  acled_counts:
+    what: ["Count of conflict events in the region (ACLED).", "عدد أحداث النزاع في المنطقة."]
+    drivers: ["Wars and unrest.", "الحروب والاضطرابات."]
+    up: ["Higher regional risk.", "مخاطر أعلى في المنطقة."]
+    down: ["Calmer.", "أهدى."]
+    related: [gpr_daily]
+  drug_shortages:
+    what: ["Official share of medicines in shortage.", "نسبة نواقص الأدوية الرسمية."]
+    drivers: ["Dollar availability for imports and pricing that doesn't cover costs.", "توفر الدولار للاستيراد وأسعار مش مغطية التكلفة."]
+    up: ["Patients struggle to find medicines; pressure for repricing.", "المرضى بيتعبوا يلاقوا الأدوية والضغط لإعادة التسعير بيزيد."]
+    down: ["Supply improving.", "التوفر بيتحسن."]
+    related: [eda_signal, fx_cbe_official]
+  pharma_market:
+    what: ["Growth of pharmaceutical sales in Egypt.", "نمو مبيعات سوق الدواء في مصر."]
+    drivers: ["Prices, volumes and new launches.", "الأسعار والكميات والأدوية الجديدة."]
+    up: ["Market expanding (often price-driven).", "السوق بيكبر وغالبا بسبب الأسعار."]
+    down: ["Slower market.", "سوق أبطأ."]
+    related: [cpi_health_yoy]
+  gold_local_premium_egp:
+    what: ["Local 21K gold premium over its fair value, in pounds per gram. About ±50 EGP is normal noise.", "فرق سعر جرام عيار 21 عن سعره العادل بالجنيه. حوالي 50 جنيه زيادة أو نقص يعتبر عادي."]
+    drivers: ["Local demand and devaluation fears.", "الطلب المحلي والخوف من التخفيض."]
+    up: ["People pay extra for gold — devaluation hedging.", "الناس بتدفع زيادة في الدهب للتحوط."]
+    down: ["Discount — dollar demand easing.", "خصم والطلب على الدولار بيهدى."]
+    related: [gold_local_premium_pct]
+  ca_pressure_pct_gdp:
+    what: ["Extra current-account pressure from oil above the budget price, using the IMF rule of thumb (+$10/bbl ≈ +0.3% of GDP).", "ضغط إضافي على الحساب الجاري من البترول الغالي حسب قاعدة صندوق النقد: كل 10 دولار حوالي 0.3% من الناتج."]
+    drivers: ["Brent minus the budget assumption.", "برنت ناقص سعر الموازنة."]
+    up: ["More dollars needed for fuel imports.", "دولارات أكتر مطلوبة لاستيراد الوقود."]
+    down: ["Less pressure.", "ضغط أقل."]
+    related: [brent_gap, brent]
+  brent_egp:
+    what: ["Oil price expressed in Egyptian pounds (Brent × official dollar rate).", "سعر البترول بالجنيه المصري."]
+    drivers: ["Oil prices and the pound.", "سعر البترول والجنيه."]
+    up: ["Fuel subsidies get more expensive; pump-price hikes become more likely.", "دعم الوقود بيغلى وزيادة أسعار البنزين بتبقى أقرب."]
+    down: ["Less subsidy pressure.", "ضغط دعم أقل."]
+    related: [brent, fx_cbe_official]
+  pmi_3m_avg:
+    what: ["Average of the last three monthly PMI readings — smooths out noise.", "متوسط آخر 3 قراءات لمؤشر المشتريات."]
+    drivers: ["Same as the PMI.", "زي المؤشر."]
+    up: ["Trend improving.", "الاتجاه بيتحسن."]
+    down: ["Trend weakening.", "الاتجاه بيضعف."]
+    related: [pmi]
+  pmi_implied_gdp:
+    what: ["GDP growth implied by the PMI using S&P Global's rule (PMI × 0.269 − 8.62). A rough guide.", "النمو المستنتج من مؤشر المشتريات بمعادلة تقريبية."]
+    drivers: ["The PMI.", "مؤشر المشتريات."]
+    up: ["Faster implied growth.", "نمو متوقع أسرع."]
+    down: ["Slower implied growth.", "نمو متوقع أبطأ."]
+    related: [pmi]
+
+patterns:
+  - match: "^fx_chg_"
+    basis: level
+    pivot: 0
+    what: ["Percent change in the official dollar rate over the stated period. Positive = the pound weakened.", "نسبة تغير سعر الدولار الرسمي في الفترة المكتوبة. الموجب يعني الجنيه ضعف."]
+    drivers: ["Dollar supply and demand; CBE policy.", "العرض والطلب على الدولار وسياسة البنك المركزي."]
+    up: ["A weakening pound feeds imported inflation 1–6 months later.", "ضعف الجنيه بيعدي على أسعار المستورد بعد شهر لستة شهور."]
+    down: ["The pound strengthened.", "الجنيه قوي."]
+    related: [fx_cbe_official, nir, remittances_yoy]
+  - match: "^tbill_\\w+_yield$"
+    what: ["Weighted average yield at the government's T-bill auction for this tenor.", "متوسط العائد في مزاد أذون الخزانة للمدة دي."]
+    drivers: ["CBE rates, inflation expectations and the government's financing needs.", "فايدة البنك المركزي وتوقعات التضخم واحتياج الحكومة للتمويل."]
+    up: ["Higher cost of government borrowing; may attract foreign carry money.", "تكلفة اقتراض أعلى على الحكومة، وممكن تجذب أموال أجنبية."]
+    down: ["Cheaper government borrowing.", "اقتراض أرخص للحكومة."]
+    related: [cbe_odr, real_headline]
+  - match: "^tbill_\\w+_btc$"
+    basis: level
+    pivot: 1.2
+    what: ["Bid-to-cover: how much investors offered versus what the government wanted to borrow. Above 1.2 is healthy demand.", "نسبة التغطية: المستثمرين عرضوا قد إيه مقابل اللي الحكومة عايزة تستلفه. فوق 1.2 طلب كويس."]
+    drivers: ["Bank liquidity, foreign demand and yield expectations.", "سيولة البنوك وطلب الأجانب وتوقعات العائد."]
+    up: ["Strong appetite for government debt.", "إقبال قوي على ديون الحكومة."]
+    down: ["Weak demand — the government may have to pay more.", "طلب ضعيف والحكومة ممكن تضطر تدفع أكتر."]
+    related: [tbill_12m_yield]
+  - match: "^tbill_\\w+_accepted_ratio$"
+    basis: level
+    pivot: 0.7
+    what: ["How much the government accepted versus what it offered. Below 70% often means bids asked for yields the government refused.", "الحكومة قبلت قد إيه مقابل المطلوب. أقل من 70% غالبا معناه العروض كانت بعوايد الحكومة رفضتها."]
+    drivers: ["The government's cost discipline and investors' yield demands.", "حرص الحكومة على التكلفة ومطالب المستثمرين."]
+    up: ["The government is borrowing what it planned.", "الحكومة بتستلف اللي خططت ليه."]
+    down: ["Financing stress: the government refused expensive bids or raised less money.", "ضغط تمويل: الحكومة رفضت عروض غالية أو جمعت فلوس أقل."]
+    related: [tbill_12m_yield]
+  - match: "_(transits|capacity)$"
+    what: ["Daily ships (or tonnage) passing this chokepoint, from IMF PortWatch satellite tracking.", "عدد السفن أو الحمولة اللي بتعدي من الممر ده يوميا من بيانات صندوق النقد بالأقمار الصناعية."]
+    drivers: ["Security, shipping costs and global trade.", "الأمان وتكلفة الشحن والتجارة العالمية."]
+    up: ["More traffic.", "حركة أكتر."]
+    down: ["Less traffic.", "حركة أقل."]
+    related: [gpr_daily]
+  - match: "^imf_weo_"
+    what: ["IMF World Economic Outlook figure for Egypt (years ahead are IMF projections).", "رقم من توقعات صندوق النقد لمصر، والسنين الجاية توقعات."]
+    drivers: ["IMF staff assessments, updated twice a year.", "تقديرات خبراء الصندوق، بتتحدث مرتين في السنة."]
+    up: ["See the indicator name.", "حسب اسم المؤشر."]
+    down: ["See the indicator name.", "حسب اسم المؤشر."]
+    related: []
+  - match: "^gpr_"
+    what: ["Geopolitical risk index (Caldara–Iacoviello), built from news coverage of wars and threats.", "مؤشر المخاطر الجيوسياسية المحسوب من الأخبار عن الحروب والتهديدات."]
+    drivers: ["Conflicts and threats in the region named.", "النزاعات والتهديدات في المنطقة المذكورة."]
+    up: ["More risk: oil, tourism and capital flows can suffer.", "مخاطر أكتر والبترول والسياحة والاستثمار ممكن يتأثروا."]
+    down: ["Less risk.", "مخاطر أقل."]
+    related: [gpr_daily]
+  - match: "^gdelt_"
+    what: ["Tone or volume of global news on this topic (GDELT). Tone below zero = negative coverage.", "نبرة أو حجم الأخبار العالمية عن الموضوع ده. تحت الصفر يعني أخبار سلبية."]
+    drivers: ["Major news events.", "الأحداث الكبيرة."]
+    up: ["More positive / more coverage.", "أخبار أحسن أو أكتر."]
+    down: ["More negative coverage.", "أخبار أسوأ."]
+    related: []
+  - match: "^fuel_"
+    what: ["Pump price set by Egypt's fuel-pricing committee.", "سعر الوقود اللي بتحدده لجنة التسعير."]
+    drivers: ["Oil prices in pounds and subsidy policy.", "سعر البترول بالجنيه وسياسة الدعم."]
+    up: ["Raises transport and production costs (inflation).", "بيغلي النقل والإنتاج."]
+    down: ["—", "—"]
+    related: [brent_egp_qavg_chg]
+  - match: "^cpi_"
+    what: ["Consumer price inflation for the group named.", "تضخم أسعار المستهلكين للبند المكتوب."]
+    drivers: ["The exchange rate, food and fuel prices.", "سعر الصرف وأسعار الأكل والوقود."]
+    up: ["Higher cost of living in that group.", "المعيشة في البند ده بتغلى."]
+    down: ["Price pressure easing.", "ضغط الأسعار بيخف."]
+    related: [cpi_urban_yoy]
+  - match: "_fy$"
+    what: ["A balance-of-payments item for Egypt's fiscal year (July–June), from the CBE.", "بند من ميزان المدفوعات للسنة المالية من يوليو ليونيو."]
+    drivers: ["Trade, tourism, Suez, remittances and investment flows.", "التجارة والسياحة والقناة والتحويلات والاستثمار."]
+    up: ["See whether this item brings dollars in (receipts) or takes them out (imports, payments).", "شوف البند ده بيدخل دولارات ولا بيخرجها."]
+    down: ["Opposite.", "العكس."]
+    related: [bop_ca_fy]
+  - match: "^(us_|breakeven|usd_|eurusd|msci)"
+    what: ["A US or global market indicator that shapes the dollar and risk appetite.", "مؤشر أمريكي أو عالمي بيأثر على الدولار وشهية المخاطرة."]
+    drivers: ["US economy and Federal Reserve expectations.", "الاقتصاد الأمريكي وتوقعات الفيدرالي."]
+    up: ["See the indicator name.", "حسب اسم المؤشر."]
+    down: ["See the indicator name.", "حسب اسم المؤشر."]
+    related: [fed_funds, dxy]

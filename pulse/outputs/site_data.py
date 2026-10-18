@@ -24,7 +24,7 @@ from . import fmt
 WEB = Path(__file__).resolve().parents[1] / "web"
 
 DOMAINS = [
-    ("fx", "The pound", "الجنيه", ["fx_cbe_official", "fx_market", "fx_gold_implied", "gold_gap_pct", "fx_chg_20d", "fx_chg_3m",
+    ("fx", "The pound & markets", "الجنيه والبورصة", ["fx_cbe_official", "egx30", "egx70", "fx_market", "fx_gold_implied", "gold_gap_pct", "fx_chg_20d", "fx_chg_3m",
                                     "fx_vol_20d", "fx_market_gap_pct", "tbill_3m_yield", "tbill_12m_yield", "tbill_12m_btc",
                                     "tbill_12m_accepted_ratio", "carry_ex_post_3m", "fx_parallel", "eurobond_yield", "cds_5y"]),
     ("monetary", "Rates & inflation", "الفايدة والتضخم",
@@ -131,12 +131,47 @@ def _points(s: pd.Series, since: pd.Timestamp | None = None, max_points: int | N
     return [[d.strftime("%Y-%m-%d"), round(float(v), 6)] for d, v in s.items()]
 
 
+def explain_for(sid: str) -> dict | None:
+    import re as _re
+    cfg = load_yaml("explain.yaml")
+    e = (cfg.get("series") or {}).get(sid)
+    if e is None:
+        for pat in cfg.get("patterns", []):
+            if _re.search(pat["match"], sid):
+                e = pat
+                break
+    if e is None:
+        return None
+    return {k: e.get(k) for k in ("what", "drivers", "up", "down", "related", "basis", "pivot")}
+
+
+def related_moves(v: DataView, sid: str, ex: dict | None, start: date | None, end: date) -> list[dict]:
+    """How related indicators moved over the same window — shown as 'possible reasons from the data'."""
+    out = []
+    if not ex or not start:
+        return out
+    for rid in ex.get("related") or []:
+        if rid == sid or rid not in catalog():
+            continue
+        a, b = v.value_at(rid, start), v.value_at(rid, end)
+        if a is None or b is None or a.date == b.date:
+            continue
+        m = catalog()[rid]
+        pp = m.get("unit") in ("%", "pp")
+        chg = b.value - a.value
+        out.append({"id": rid, "from": a.date.isoformat(), "to": b.date.isoformat(), "change": _clean(chg),
+                    "change_pct": None if pp or not a.value else _clean((b.value / a.value - 1) * 100),
+                    "pp": pp, "unit": m.get("unit"), "sign": DIRECTION.get(rid, 0), "source": b.source_name,
+                    "url": b.source_url if b.source_url.startswith("http") else None})
+    return out
+
+
 def series_payload(v: DataView, sid: str, today: date) -> dict:
     m = catalog()[sid]
     o = v.latest(sid)
     p = {"id": sid, "name_en": m["name_en"], "name_ar": m["name_ar"], "domain": m["domain"], "unit": m.get("unit") or "",
          "freq": m["frequency"], "access": m["access"], "definition": m.get("definition_note"),
-         "sign": DIRECTION.get(sid, 0), "source_key": m.get("source")}
+         "sign": DIRECTION.get(sid, 0), "source_key": m.get("source"), "explain": explain_for(sid)}
     if o is None:
         p["empty"] = True
         return p
@@ -151,6 +186,22 @@ def series_payload(v: DataView, sid: str, today: date) -> dict:
     if prev is not None:
         p.update(prev=_clean(prev.value), prev_date=prev.date.isoformat(), change=_clean(o.value - prev.value),
                  change_pct=_clean((o.value / prev.value - 1) * 100) if prev.value else None)
+    # context window for "what moved alongside": 30 days for daily data, else previous period end → this period end
+    from ..core import period_end
+    freq = m["frequency"]
+    if freq in ("daily", "per_auction"):
+        w_end, w_start = o.date, o.date - timedelta(days=30)
+    elif prev is not None:
+        w_end, w_start = period_end(o.date, freq), period_end(prev.date, freq)
+    else:
+        w_end = w_start = None
+    if w_start:
+        a = v.value_at(sid, w_start)
+        p["window"] = {"from": w_start.isoformat(), "to": w_end.isoformat(),
+                       "change": _clean(o.value - a.value) if a else None,
+                       "change_pct": _clean((o.value / a.value - 1) * 100) if a and a.value and m.get("unit") not in ("%", "pp") else None,
+                       "start_value": _clean(a.value) if a else None, "start_date": a.date.isoformat() if a else None}
+    p["moves"] = related_moves(v, sid, p["explain"], w_start, w_end) if w_start else []
     return p
 
 

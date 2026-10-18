@@ -58,6 +58,14 @@
     nothing_fired: ['Nothing fired here today.', 'مفيش إشارات هنا النهارده.'], events_title: ['Events', 'الأحداث'],
     pending: ['pending', 'مستني'], status: ['status', 'الحالة'], rows: ['rows', 'صفوف'], error: ['error', 'خطأ'],
     queue_empty: ['Queue empty.', 'مفيش أحداث مستنية.'], no_events: ['No active events.', 'مفيش أحداث شغالة.'],
+    explain: ['Explain', 'اشرح'], what_means: ['What this means', 'يعني إيه الرقم ده'], what_is: ['What it is', 'هو إيه'],
+    what_moves: ['What usually moves it', 'إيه اللي بيحركه'], what_happened: ['What happened', 'إيه اللي حصل'],
+    may_lead: ['What it may lead to', 'ممكن يؤدي لإيه'], alongside: ['Moved alongside it (same period)', 'اتحرك معاه في نفس الفترة'],
+    signals_using: ['Signals that use this number today', 'إشارات النهارده اللي بتستخدم الرقم ده'], related_events: ['Related events', 'أحداث مرتبطة'],
+    not_proof: ['Possible reasons from the data — not proven causes.', 'أسباب محتملة من البيانات، مش إثبات.'],
+    rose: ['rose', 'زاد'], fell: ['fell', 'قل'], flat: ['was unchanged', 'فضل ثابت'], from_: ['from', 'من'], to_: ['to', 'لـ'],
+    if_rises: ['If it rises', 'لو زاد'], if_falls: ['If it falls', 'لو قل'],
+    no_history: ['Only one reading so far — history builds from now.', 'فيه قراءة واحدة بس لحد دلوقتي، والتاريخ هيتبني من النهارده.'],
     help_ppi: ['Each sub-index compares today with the last 3 years (z-score → −100…+100), adds fired rules and decaying events. Weights: config/indices.yaml.',
       'كل مؤشر فرعي بيقارن النهارده بآخر 3 سنين، وبيضيف الإشارات والأحداث. الأوزان في ملف الإعدادات.'],
   };
@@ -67,14 +75,14 @@
     real: ['pmi'], global: [], geo: ['gpr', 'choke'], health: [] };
   const RULE_DOMAIN = { fx: 'fx', monetary: 'monetary', external: 'external', fiscal: 'fiscal', energy: 'energy', real: 'real',
     gold: 'energy', global: 'global', geopolitical: 'geo', healthcare: 'health' };
-  const KPIS = ['fx_cbe_official', 'gold_gap_pct', 'nir', 'cpi_urban_yoy', 'cbe_odr', 'brent', 'pmi', 'suez_ratio_7dma'];
+  const KPIS = ['fx_cbe_official', 'gold_gap_pct', 'nir', 'cpi_urban_yoy', 'cbe_odr', 'brent', 'egx30', 'pmi'];
 
   // ------------------------------------------------------------------ state
   const store = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } };
   const S = {
     D: null, version: null, lang: store('pulse.lang') === 'ar' ? 'ar' : 'en', theme: store('pulse.theme') || 'auto',
     route: 'overview', sigFilter: 'fired', ranges: {}, seriesCache: {}, server: false, running: false, lastPoll: null,
-    palIndex: 0, flashIds: new Set(), dataFilter: '',
+    palIndex: 0, flashIds: new Set(), dataFilter: '', explain: store('pulse.explain') === '1',
   };
   const t = (k) => (I18N[k] ? I18N[k][S.lang === 'ar' ? 1 : 0] : k);
   const AR = () => S.lang === 'ar';
@@ -119,7 +127,7 @@
   }
   function unitShort(u) {
     const m = { 'EGP per USD': 'EGP', 'USD mn': 'mn $', 'USD bn': 'bn $', 'USD/bbl': '$/bbl', 'EGP/gram': 'EGP/g', 'USD/oz': '$/oz',
-      'EGP/litre': 'EGP/L', '% GDP': '% GDP', 'index': '', 'ratio': '×', 'pp': 'pp', '%': '%', 'code': '', 'score': '', 'tone': '' };
+      'EGP/litre': 'EGP/L', '% GDP': '% GDP', 'points': 'pts', 'index': '', 'ratio': '×', 'pp': 'pp', '%': '%', 'code': '', 'score': '', 'tone': '' };
     return m[u] ?? u;
   }
   function valueHtml(s) {
@@ -164,6 +172,16 @@
   }
   const fmtDate = (iso) => { if (!iso) return ''; const d = new Date(iso + (iso.length === 10 ? 'T12:00:00' : ''));
     return d.toLocaleDateString(AR() ? 'ar-EG-u-nu-latn' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); };
+  function fmtObs(iso, freq) {
+    if (!iso) return '';
+    const y = +iso.slice(0, 4), m = +iso.slice(5, 7);
+    const mon = new Date(y, m - 1, 15).toLocaleDateString(AR() ? 'ar-EG-u-nu-latn' : 'en-GB', { month: 'short', year: 'numeric' });
+    if (freq === 'monthly') return mon;
+    if (freq === 'quarterly') return `Q${Math.floor((m - 1) / 3) + 1} ${y}`;
+    if (freq === 'fiscal_year') return `FY${y}/${String(y + 1).slice(2)}`;
+    if (freq === 'annual') return String(y);
+    return fmtDate(iso);
+  }
   const verdict = (v) => v == null ? ['n', t('no_data')] : v <= -40 ? ['r', t('strong_relief')] : v < -10 ? ['r', t('relief')] :
     v <= 10 ? ['n', t('balanced')] : v < 40 ? ['p', t('pressure')] : ['p', t('strong_pressure')];
   const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -181,6 +199,51 @@
       <path d="${d} L ${W} ${H} L 0 ${H} Z" fill="var(--brand)" opacity=".08"/>
       <path d="${d}" fill="none" stroke="var(--brand)" stroke-width="1.6" vector-effect="non-scaling-stroke"/>
       <circle cx="${last[0]}" cy="${last[1]}" r="2.6" fill="var(--sand)"/></svg>`;
+  }
+  const exTxt = (pair) => (pair ? (AR() ? pair[1] || pair[0] : pair[0]) : '');
+  const firstSentence = (txt, n = 120) => { const m = (txt || '').match(/^.*?[.!؟?](\s|$)/); let x = m ? m[0].trim() : (txt || ''); return x.length > n ? x.slice(0, n - 1) + '…' : x; };
+  function fmtChange(chg, pct, pp, unit) {
+    if (chg == null) return '';
+    const d = pp ? 2 : digitsFor(chg, unit);
+    return `${chg > 0 ? '+' : chg < 0 ? '−' : '±'}${nf(Math.abs(chg), d)}${pp ? ' pp' : ''}${!pp && pct != null && Math.abs(pct) < 1000 ? ` (${pct > 0 ? '+' : ''}${nf(pct, 1)}%)` : ''}`;
+  }
+  // read the impact from the latest move, or from the level vs a threshold (gaps, changes, ratios)
+  const impactDir = (s, moveChange) => (s.explain && s.explain.basis === 'level' && s.value != null) ? (s.value - (s.explain.pivot || 0)) : moveChange;
+  const EV_DOMAIN = { energy: 'commodities', gold: 'commodities', geopolitical: 'geopolitical', external: 'external', fiscal: 'fiscal', healthcare: 'healthcare', fx: 'fiscal', monetary: 'fiscal' };
+  function explainPanel(s) {
+    const ex = s.explain;
+    if (!ex) return '';
+    const w = s.window;
+    const pp = s.unit === '%' || s.unit === 'pp';
+    let happened = '';
+    if (w && w.change != null && s.value != null) {
+      const dir = w.change > 0 ? t('rose') : w.change < 0 ? t('fell') : t('flat');
+      happened = `<p><span class="num">${esc(fmtObs(w.start_date, s.freq))}</span> → <span class="num">${esc(fmtObs(s.date, s.freq))}</span>: ${esc(dir)} <span class="num">${esc(w.change ? fmtChange(w.change, w.change_pct, pp, s.unit) : '')}</span>
+        (${esc(t('from_'))} <span class="num">${nf(w.start_value, digitsFor(w.start_value, s.unit))}</span> ${esc(t('to_'))} <span class="num">${nf(s.value, digitsFor(s.value, s.unit))}</span>).</p>`;
+    } else if (!s.empty) happened = `<p class="muted">${esc(t('no_history'))}</p>`;
+    const moves = (s.moves || []).map((m) => {
+      const r = S.D.series[m.id]; const dir = Math.sign(m.change) * (m.sign || 0);
+      const cls = dir > 0 ? 'p' : dir < 0 ? 'r' : 'n';
+      return `<li><a href="#/s/${m.id}" data-series="${m.id}">${esc(r ? nm(r) : m.id)}</a> <span class="t-chg ${cls}" style="display:inline-flex"><span class="num">${esc(fmtChange(m.change, m.change_pct, m.pp, m.unit))}</span></span>
+        <span class="tiny muted num">${esc(fmtDate(m.from))} → ${esc(fmtDate(m.to))}</span>${m.url ? ` <a class="tiny" href="${esc(m.url)}" target="_blank" rel="noopener">${esc(t('source'))} ↗</a>` : ''}</li>`;
+    }).join('');
+    const sigs = S.D.rules.filter((r) => r.fired && (r.inputs || []).some((i) => i.series === s.id))
+      .map((r) => `<li><b>${esc(r.id)}</b> — ${AR() ? bidi(esc(r.ar || r.en)) : esc(r.en)}</li>`).join('');
+    const evd = EV_DOMAIN[s.domain];
+    const evs = S.D.events.filter((e) => e.domain === evd && e.direction !== 0).slice(0, 3)
+      .map((e) => `<li><span class="num">${esc(fmtDate(e.event_date))}</span> — ${esc(AR() ? e.title_ar || e.title_en : e.title_en)} <a class="tiny" href="${esc(e.source_url)}" target="_blank" rel="noopener">↗</a></li>`).join('');
+    const ch = impactDir(s, w && w.change != null ? w.change : s.change);
+    const up = `<b>${esc(t('if_rises'))}:</b> ${esc(exTxt(ex.up))}`, down = `<b>${esc(t('if_falls'))}:</b> ${esc(exTxt(ex.down))}`;
+    const lead = ch > 0 ? `<p>${up}</p><p class="small muted">${down}</p>` : ch < 0 ? `<p>${down}</p><p class="small muted">${up}</p>` : `<p>${up}</p><p>${down}</p>`;
+    return `<section class="card explain"><h3>${esc(t('what_means'))}</h3>
+      <div class="ex-row"><b>${esc(t('what_is'))}</b><p>${esc(exTxt(ex.what))}</p></div>
+      <div class="ex-row"><b>${esc(t('what_moves'))}</b><p>${esc(exTxt(ex.drivers))}</p></div>
+      <div class="ex-row"><b>${esc(t('what_happened'))}</b>${happened}
+        ${moves ? `<div class="small" style="margin-top:6px">${esc(t('alongside'))}:</div><ul class="inputs">${moves}</ul>` : ''}
+        ${sigs ? `<div class="small" style="margin-top:8px">${esc(t('signals_using'))}:</div><ul class="inputs">${sigs}</ul>` : ''}
+        ${evs ? `<div class="small" style="margin-top:8px">${esc(t('related_events'))}:</div><ul class="inputs">${evs}</ul>` : ''}
+        ${moves || sigs || evs ? `<p class="tiny muted" style="margin-top:6px">${esc(t('not_proof'))}</p>` : ''}</div>
+      <div class="ex-row"><b>${esc(t('may_lead'))}</b>${lead}</div></section>`;
   }
   function badges(s) {
     const out = [];
@@ -201,12 +264,17 @@
         <span class="t-val">${esc(t('no_data'))}</span><span class="t-meta">${esc(hint)}</span></button>`;
     }
     const ch = changeInfo(s);
-    return `<button class="tile${flash}" data-series="${id}" aria-label="${esc(nm(s))}">
-      <span class="t-name">${esc(nm(s))}</span>
+    const what = s.explain ? exTxt(s.explain.what) : '';
+    const idir = impactDir(s, s.change);
+    const impact = s.explain && idir ? exTxt(idir > 0 ? s.explain.up : s.explain.down) : '';
+    const exLines = S.explain && what ? `<span class="t-ex">${esc(firstSentence(what))}</span>` : '';
+    const exImpact = S.explain && impact && impact !== '—' ? `<span class="t-ex t-imp">→ ${esc(firstSentence(impact, 140))}</span>` : '';
+    return `<button class="tile${flash}${S.explain ? ' explained' : ''}" data-series="${id}" aria-label="${esc(nm(s))}" title="${esc(what)}">
+      <span class="t-name">${esc(nm(s))}</span>${exLines}
       <span class="t-val">${valueHtml(s)}</span>
       ${ch ? `<span class="t-chg ${ch.cls}" title="${esc(ch.word)}"><span aria-hidden="true">${ch.arrow}</span><span class="num">${esc(ch.txt)}</span></span>` : '<span class="t-chg n">&nbsp;</span>'}
-      ${sparkSvg(s.spark)}
-      <span class="t-meta"><span class="num">${esc(fmtDate(s.date))}</span>${badges(s)}</span></button>`;
+      ${exImpact}${sparkSvg(s.spark)}
+      <span class="t-meta"><span class="num">${esc(fmtObs(s.date, s.freq))}</span>${badges(s)}</span></button>`;
   }
   function gaugeSvg(v) {
     const ang = v == null ? 0 : Math.max(-100, Math.min(100, v)) / 100 * 90;
@@ -503,9 +571,10 @@
     const ch = changeInfo(s);
     body.innerHTML = `<h2 class="d-title" id="drawerTitle">${esc(nm(s))}</h2><p class="d-sub">${esc(AR() ? s.name_en : s.name_ar)} · <code>${esc(s.id)}</code></p>
       <div class="d-big"><span class="v">${s.empty ? esc(t('no_data')) : valueHtml(s)}</span>
-        ${ch ? `<span class="t-chg ${ch.cls}" style="font-size:15px">${ch.arrow} <span class="num">${esc(ch.txt)}</span> ${esc(t('vs'))} <span class="num">${esc(fmtDate(s.prev_date))}</span> ${ch.word ? '· ' + esc(ch.word) : ''}</span>` : ''}
+        ${ch ? `<span class="t-chg ${ch.cls}" style="font-size:15px">${ch.arrow} <span class="num">${esc(ch.txt)}</span> ${esc(t('vs'))} <span class="num">${esc(fmtObs(s.prev_date, s.freq))}</span> ${ch.word ? '· ' + esc(ch.word) : ''}</span>` : ''}
         ${s.empty ? '' : badges(s)}</div>
-      <div class="card"><h3>${esc(t('history'))}<span id="dRange"></span></h3><div class="chart" dir="ltr" id="dChart"><div class="muted small">…</div></div></div>
+      ${explainPanel(s)}
+      <div class="card" style="margin-top:12px"><h3>${esc(t('history'))}<span id="dRange"></span></h3><div class="chart" dir="ltr" id="dChart"><div class="muted small">…</div></div></div>
       <div class="facts">
         <div class="fact"><b>${esc(t('source'))}</b>${s.url ? `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.source)} ↗</a>` : esc(s.source || s.access)}</div>
         <div class="fact"><b>${esc(t('observed'))} / ${esc(t('released'))}</b><span class="num">${esc(s.date || '—')}${s.obs_time ? ' ' + esc(s.obs_time.slice(11, 16)) : ''} / ${esc(s.release || '—')}</span></div>
@@ -634,6 +703,7 @@
     const icons = { auto: '◐', light: '☀', dark: '☾' };
     $('#themeBtn').textContent = icons[S.theme] || '◐';
     $('#themeBtn').title = `theme: ${S.theme}`;
+    $('#explainBtn').setAttribute('aria-pressed', String(S.explain));
     updateLive();
   }
   function setLang(l) {
@@ -732,6 +802,7 @@
     });
     $$('.seg [data-lang]').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));
     $('#themeBtn').addEventListener('click', cycleTheme);
+    $('#explainBtn').addEventListener('click', () => { S.explain = !S.explain; store('pulse.explain', S.explain ? '1' : '0'); render(true); });
     $('#searchBtn').addEventListener('click', openPalette);
     $('#runBtn').addEventListener('click', runNow);
     document.addEventListener('keydown', (e) => {

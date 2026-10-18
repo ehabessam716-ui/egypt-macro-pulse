@@ -17,6 +17,7 @@
     const q = new URLSearchParams(location.search);
     if (q.get('lang')) localStorage.setItem('pulse.lang', q.get('lang') === 'ar' ? 'ar' : 'en');
     if (q.get('theme')) localStorage.setItem('pulse.theme', q.get('theme'));
+    if (q.get('explain')) localStorage.setItem('pulse.explain', q.get('explain') === '1' ? '1' : '0');
     const t = localStorage.getItem('pulse.theme'); if (t && t !== 'auto') document.documentElement.dataset.theme = t;
     const l = localStorage.getItem('pulse.lang'); if (l === 'ar') { document.documentElement.lang = 'ar'; document.documentElement.dir = 'rtl'; }
   } catch (e) {}
@@ -35,6 +36,7 @@
   <div class="top-actions">
     <button class="live" id="live" type="button" aria-live="polite"><span class="dot"></span><span id="liveText">…</span></button>
     <button class="btn ghost" id="searchBtn" type="button" aria-label="Search"><span aria-hidden="true">⌕</span><span class="hide-sm" data-i18n="search">Search</span><kbd class="hide-sm">Ctrl K</kbd></button>
+    <button class="btn ghost toggle" id="explainBtn" type="button" aria-pressed="false" title="Explain every number"><span aria-hidden="true">ⓘ</span><span class="hide-sm" data-i18n="explain">Explain</span></button>
     <button class="btn ghost" id="runBtn" type="button" hidden><span aria-hidden="true">↻</span><span class="hide-sm" data-i18n="update_now">Update now</span></button>
     <div class="seg" role="group" aria-label="Language">
       <button type="button" data-lang="en">EN</button><button type="button" data-lang="ar">ع</button>
