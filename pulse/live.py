@@ -38,7 +38,13 @@ SPARK_POINTS = 60
 def _bars(symbol: str):
     import yfinance as yf
 
-    h = yf.Ticker(symbol).history(period="5d", interval="15m")
+    t = yf.Ticker(symbol)
+    try:
+        h = t.history(period="5d", interval="15m")
+    except Exception:  # noqa: BLE001 — some exchanges (e.g. Cairo .CA) fail intraday on certain hosts
+        h = None
+    if h is None or h.empty:
+        h = t.history(period="10d", interval="1d")  # fall back to daily closes
     return h.dropna(subset=["Close"]) if h is not None and not h.empty else None
 
 

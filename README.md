@@ -16,6 +16,15 @@ headlines, recomputes the live insights (gold-implied rate vs official, oil vs b
 republishes the site. The page shows them in **Right now** and refreshes itself every minute. Intraday quotes are kept
 out of the official daily record (`site/data/live.js` only). Manually: `pulse live`.
 
+**Two modes** (switch top-right): **Simple** (default) is a tutor for complete beginners — one plain sentence about
+today, the economy as a chain of 16 boxes (red = hurting the pound, blue = helping) with tap-to-learn cards that walk
+from cause to effect, a 2-minute guided tour and 8 five-minute lessons with quizzes, all using today's numbers
+(`pulse/outputs/chain.py`, `config/lessons.yaml`). **Pro** is the full dashboard. Link options: `?mode=simple|pro`, `?lang=ar`.
+
+**Hot money gauges:** CIB in Cairo vs its London GDR (implied dollar rate and premium), EGX30 in dollars, T-bill demand
+and carry — combined in rule HM01. **Data audit:** `pulse audit` (also every run) checks ranges, accounting identities
+and cross-source consistency → `reports/data_audit.md` and the Data page.
+
 **On this PC:**
 
 **http://localhost:8765** — starts automatically when you log in to Windows (task `\EgyptMacroPulse\server_at_logon`).
