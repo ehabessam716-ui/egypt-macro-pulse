@@ -61,6 +61,14 @@ Seeds: 18 confirmed against primary sources, 0 conflicts, 30 secondary-only (`re
 - EGX30 added (Yahoo ^CASE30 — no back history available, accumulates from 18 Oct 2026). EGX70 EWI is MANUAL:
   egx.com.eg answers only after an anti-bot JavaScript challenge, which the tool does not bypass.
 
+## Live layer (added 19 Oct 2026)
+
+- `pulse/live.py` + `.github/workflows/live.yml` (cron every 15 min, ~1 min per run): intraday quotes, local gold,
+  CBE rate of the day, headlines and six live insights (EN/AR, each with sources and timestamps) → `site/data/live.js`.
+- The main workflow also saves the finished site (`site.tar.gz`) in the `state` release so the live runs republish
+  the latest full build plus fresh live data. Nothing needs to stay open; the PC can be off.
+- EGX30 now has ~3 years of daily history (Yahoo hourly bars → last bar per day).
+
 ## How to use
 
 - **App:** http://localhost:8765 (or open `site/index.html`).

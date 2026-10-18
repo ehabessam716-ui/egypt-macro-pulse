@@ -9,6 +9,13 @@ USD/EGP and Egypt's economy. **Not financial advice.** Spec: [SPEC.md](SPEC.md).
 (`.github/workflows/pulse.yml`) on the same schedule; the database lives in the `state` release.
 Run it on demand: GitHub → Actions → Pulse → *Run workflow*.
 
+**Live layer (fully automatic, nothing to keep open):** `.github/workflows/live.yml` runs every 15 minutes on GitHub's
+servers. It refreshes intraday market quotes (USD/EGP market, EGX30, Brent, world gold, dollar index, VIX, US 10Y,
+wheat, EU gas, EM stocks — Yahoo, delayed), local 21K gold (banklive), today's CBE official rate and the latest
+headlines, recomputes the live insights (gold-implied rate vs official, oil vs budget, EGX30 in dollars, risk mood) and
+republishes the site. The page shows them in **Right now** and refreshes itself every minute. Intraday quotes are kept
+out of the official daily record (`site/data/live.js` only). Manually: `pulse live`.
+
 **On this PC:**
 
 **http://localhost:8765** — starts automatically when you log in to Windows (task `\EgyptMacroPulse\server_at_logon`).
