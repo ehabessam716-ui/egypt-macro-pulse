@@ -80,6 +80,48 @@ series:
     up: ["Local risk appetite is strong (sometimes speculative).", "الإقبال المحلي على المخاطرة عالي، وساعات بيكون مضاربة."]
     down: ["Local investors are cautious or short of cash.", "المستثمر المحلي حذر أو مفيش سيولة."]
     related: [egx30, interbank_overnight]
+  cpi_imf_all:
+    what: ["A price index for all consumer prices in Egypt (IMF database, monthly). Used to measure how prices reacted after past dollar moves.", "رقم قياسي لـكل أسعار المستهلك في مصر (قاعدة بيانات صندوق النقد، شهري). بنستخدمه نقيس الأسعار اتأثرت إزاي بعد حركات الدولار اللي فاتت."]
+    drivers: ["The dollar rate, global commodity prices, government-set prices and demand.", "سعر الدولار وأسعار السلع العالمية والأسعار اللي الحكومة بتحددها والطلب."]
+    up: ["Prices are rising — money buys less.", "الأسعار بتزيد والفلوس بتجيب أقل."]
+    down: ["Prices are falling (rare).", "الأسعار بتقل (نادر)."]
+    related: [cpi_urban_yoy, fx_cbe_official]
+  cpi_imf_food:
+    what: ["A price index for food and drink prices in Egypt (IMF database, monthly). Used to measure how prices reacted after past dollar moves.", "رقم قياسي لـأسعار الأكل والمشروبات في مصر (قاعدة بيانات صندوق النقد، شهري). بنستخدمه نقيس الأسعار اتأثرت إزاي بعد حركات الدولار اللي فاتت."]
+    drivers: ["The dollar rate, global commodity prices, government-set prices and demand.", "سعر الدولار وأسعار السلع العالمية والأسعار اللي الحكومة بتحددها والطلب."]
+    up: ["Prices are rising — money buys less.", "الأسعار بتزيد والفلوس بتجيب أقل."]
+    down: ["Prices are falling (rare).", "الأسعار بتقل (نادر)."]
+    related: [cpi_urban_yoy, fx_cbe_official]
+  cpi_imf_housing:
+    what: ["A price index for housing, water, electricity and gas prices in Egypt (IMF database, monthly). Used to measure how prices reacted after past dollar moves.", "رقم قياسي لـأسعار السكن والمية والكهربا والغاز في مصر (قاعدة بيانات صندوق النقد، شهري). بنستخدمه نقيس الأسعار اتأثرت إزاي بعد حركات الدولار اللي فاتت."]
+    drivers: ["The dollar rate, global commodity prices, government-set prices and demand.", "سعر الدولار وأسعار السلع العالمية والأسعار اللي الحكومة بتحددها والطلب."]
+    up: ["Prices are rising — money buys less.", "الأسعار بتزيد والفلوس بتجيب أقل."]
+    down: ["Prices are falling (rare).", "الأسعار بتقل (نادر)."]
+    related: [cpi_urban_yoy, fx_cbe_official]
+  cpi_imf_health:
+    what: ["A price index for medicine and health-care prices in Egypt (IMF database, monthly). Used to measure how prices reacted after past dollar moves.", "رقم قياسي لـأسعار الأدوية والعلاج في مصر (قاعدة بيانات صندوق النقد، شهري). بنستخدمه نقيس الأسعار اتأثرت إزاي بعد حركات الدولار اللي فاتت."]
+    drivers: ["The dollar rate, global commodity prices, government-set prices and demand.", "سعر الدولار وأسعار السلع العالمية والأسعار اللي الحكومة بتحددها والطلب."]
+    up: ["Prices are rising — money buys less.", "الأسعار بتزيد والفلوس بتجيب أقل."]
+    down: ["Prices are falling (rare).", "الأسعار بتقل (نادر)."]
+    related: [cpi_urban_yoy, fx_cbe_official]
+  cpi_imf_transport:
+    what: ["A price index for transport prices, including fuel and cars in Egypt (IMF database, monthly). Used to measure how prices reacted after past dollar moves.", "رقم قياسي لـأسعار المواصلات والوقود والعربيات في مصر (قاعدة بيانات صندوق النقد، شهري). بنستخدمه نقيس الأسعار اتأثرت إزاي بعد حركات الدولار اللي فاتت."]
+    drivers: ["The dollar rate, global commodity prices, government-set prices and demand.", "سعر الدولار وأسعار السلع العالمية والأسعار اللي الحكومة بتحددها والطلب."]
+    up: ["Prices are rising — money buys less.", "الأسعار بتزيد والفلوس بتجيب أقل."]
+    down: ["Prices are falling (rare).", "الأسعار بتقل (نادر)."]
+    related: [cpi_urban_yoy, fx_cbe_official]
+  fx_imf_avg:
+    what: ["The average official dollar rate for each month (IMF database). Long history back to 2005 for comparing today with past episodes.", "متوسط سعر الدولار الرسمي لكل شهر (صندوق النقد)، وتاريخه من 2005 عشان نقارن النهارده باللي حصل قبل كده."]
+    drivers: ["Supply and demand for dollars, and CBE policy.", "العرض والطلب على الدولار وسياسة البنك المركزي."]
+    up: ["The pound weakened that month.", "الجنيه ضعف الشهر ده."]
+    down: ["The pound strengthened that month.", "الجنيه قوي الشهر ده."]
+    related: [fx_cbe_official, fx_market]
+  cbe_mpc_decision:
+    what: ["Each Central Bank interest-rate decision since 2005: +1 raise, 0 hold, -1 cut (read from its press releases).", "كل قرار فايدة للبنك المركزي من 2005: +1 رفع، 0 تثبيت، -1 خفض (من بياناته الصحفية)."]
+    drivers: ["Inflation, the pound and money flows.", "التضخم والجنيه وحركة الفلوس."]
+    up: ["A raise defends the pound and fights inflation but slows the economy.", "الرفع بيحمي الجنيه ويحارب التضخم بس بيبطّأ الاقتصاد."]
+    down: ["A cut supports growth when inflation is falling.", "الخفض بيساعد النمو لما التضخم بينزل."]
+    related: [cbe_odr, cpi_urban_yoy, fx_cbe_official]
   egx_foreign_net:
     basis: level
     pivot: 0

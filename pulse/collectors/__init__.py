@@ -41,15 +41,15 @@ JOBS = {
               "portwatch", "rss", "gdelt", "flows"],
     "global": ["fred", "yahoo", "intl", "portwatch"],
     "gpr": ["gpr"],
-    "weekly": ["cbe_news", "portwatch", "intl", "fomc"],
+    "weekly": ["cbe_news", "portwatch", "intl", "fomc", "imf_sdmx", "cbe_mpc_hist"],
     "calendar": ["fomc"],
 }
-JOBS["all"] = sorted({c for v in JOBS.values() for c in v} | {"fred", "gpr", "intl", "fomc"})
+JOBS["all"] = sorted({c for v in JOBS.values() for c in v} | {"fred", "gpr", "intl", "fomc", "imf_sdmx", "cbe_mpc_hist"})
 
 
 def _load_all() -> None:
     # import modules for their @collector side effects
-    from . import cbe, flows, fred, gdelt, gold_eg, gpr, intl, pmi, portwatch, rss, yahoo  # noqa: F401
+    from . import cbe, flows, fred, imf_sdmx, gdelt, gold_eg, gpr, intl, pmi, portwatch, rss, yahoo  # noqa: F401
     from .. import calendar  # noqa: F401  (registers the 'fomc' collector)
 
 

@@ -723,3 +723,32 @@ html[data-view="mobile"][data-device] .wh-move .num { font-size: 21px; }
 @media (max-width: 760px) { .lvs { grid-template-columns: 1fr; } }
 
 .pg-ends { direction: ltr; }
+
+/* ---- impact outlook ---- */
+.odds { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 12px; }
+.odd { display: flex; flex-direction: column; gap: 3px; padding: 12px; border-radius: 14px; background: var(--surface-2); border-top: 4px solid var(--neutral); }
+.odd b { font-size: 28px; line-height: 1; } .odd span { font-size: 13.5px; font-weight: 600; } .odd em { font-style: normal; font-size: 11.5px; color: var(--text-2); }
+.odd-p { border-top-color: var(--pressure); } .odd-p b { color: var(--pressure); } .odd-w { border-top-color: var(--sand); } .odd-w b { color: var(--sand); }
+.imp-t th, .imp-t td { vertical-align: middle; } .imp-t td b { font-size: 17px; display: block; } .imp-t td small { font-size: 11px; color: var(--muted); }
+.imp-t tr:first-child th { font-size: 11.5px; text-transform: none; letter-spacing: 0; }
+.acc { display: flex; gap: 10px; align-items: flex-start; margin: 12px 0; padding: 10px 12px; background: var(--surface-2); border-radius: 12px; font-size: 13px; }
+.acc-b { flex: none; font-weight: 700; font-size: 12px; padding: 3px 9px; border-radius: 999px; }
+.acc-low { background: var(--sand-soft); color: var(--sand); } .acc-medium { background: var(--brand-soft); color: var(--brand); }
+.imp-h { margin: 14px 0 6px; font-size: 15px; }
+ol.reasons { margin: 0; padding-inline-start: 22px; } ol.reasons li { margin: 6px 0; font-size: 14px; line-height: 1.55; }
+.wc-imp { font-size: 13px; color: var(--text); background: var(--surface); border-radius: 10px; padding: 7px 10px; }
+html[data-view="mobile"][data-device] .odds { grid-template-columns: 1fr; }
+html[data-view="mobile"][data-device] .odd { flex-direction: row; align-items: center; flex-wrap: wrap; column-gap: 10px; }
+html[data-view="mobile"][data-device] .odd b { font-size: 24px; } html[data-view="mobile"][data-device] .odd em { width: 100%; }
+html[data-view="mobile"][data-device] table.imp-t { display: table; width: 100%; } html[data-view="mobile"][data-device] .imp-t tbody { display: table-row-group; }
+html[data-view="mobile"][data-device] .imp-t tr { display: table-row; padding: 0; }
+html[data-view="mobile"][data-device] .imp-t tr:first-child { display: table-row; }
+html[data-view="mobile"][data-device] .imp-t th, html[data-view="mobile"][data-device] .imp-t td { display: table-cell; padding: 7px 4px; font-size: 12.5px; }
+html[data-view="mobile"][data-device] .acc { flex-direction: column; }
+@media (max-width: 760px) { .odds { grid-template-columns: 1fr; } }
+html[data-view="mobile"][data-device] .imp-t tr:has(th) { display: table-row; }
+
+.imp-t th { text-transform: none; letter-spacing: 0; font-size: 13px; color: var(--text); word-break: normal; overflow-wrap: normal; hyphens: none; }
+
+.stale-n { display: block; font-size: 10.5px; font-weight: 500; color: var(--muted); margin-top: 2px; }
+.imp-t b.xtra { font-size: 15px; color: var(--sand); }

@@ -355,6 +355,11 @@ def parse_mpc(text: str) -> dict:
         out["decision"] = -1
     elif re.search(r"decided to (raise|hike|increase)", t, re.I):
         out["decision"] = 1
+    else:  # e.g. "decided in an unscheduled meeting held on March 16, 2020 to cut ..."
+        m = re.search(r"decided\b[^.]{0,140}?\bto (raise|hike|increase|cut|reduce|lower|keep|maintain|hold)\b", t, re.I)
+        if m:
+            w = m.group(1).lower()
+            out["decision"] = 1 if w in ("raise", "hike", "increase") else -1 if w in ("cut", "reduce", "lower") else 0
     for sent in re.split(r"(?<=\.)\s+(?=[A-Z])", t):
         if "overnight deposit rate" in sent.lower() and "main operation" in sent.lower():
             vals = [float(v) for v in re.findall(r"(\d{1,2}\.\d{1,2}) percent", sent)]
@@ -574,4 +579,45 @@ def reparse_saved(conn) -> int:
         for sid, od, v in parse_cpi_release(text):
             rows += add_obs(conn, sid, od, v, unit="%", source_name=SRC + " — CPI press release", source_url=r["url"],
                             quality_flag="official", release_date=rel[0][:10] if rel else None) != "same"
+    return rows
+
+
+@collector("cbe_mpc_hist")
+def collect_mpc_history(conn, ctx) -> int:
+    """Every MPC decision since 2005 from the CBE's own press releases (raise / keep / cut + overnight deposit rate).
+    Used to show how the CBE reacted after past dollar jumps. Only releases not yet parsed are fetched."""
+    import pdfplumber
+
+    rows = 0
+    done = {r[0] for r in conn.execute("SELECT obs_date FROM observations WHERE series_id='cbe_mpc_decision'")}
+    items = conn.execute("SELECT substr(published_at,1,10), url, title FROM news_items WHERE outlet='Central Bank of Egypt' "
+                         "AND (title LIKE '%MPC%' OR title LIKE '%interest rate%' OR title LIKE '%exchange rate regime%' OR title LIKE '%liberaliz%') "
+                         "AND title NOT LIKE '%Report%' AND title NOT LIKE '%scheduled%' AND title NOT LIKE '%Date Change%' "
+                         "AND title NOT LIKE '%Reschedul%' ORDER BY published_at").fetchall()
+    for d, url, title in items:
+        if d in done or not url:
+            continue
+        try:
+            r = ctx.browser.get(url)
+            if url.lower().endswith(".pdf") or r.content[:4] == b"%PDF":
+                with pdfplumber.open(io.BytesIO(r.content)) as doc:
+                    text = " ".join((p.extract_text() or "") for p in doc.pages[:3])
+            else:
+                text = page_text(r.text)
+        except Exception as e:  # noqa: BLE001
+            log.warning("MPC %s failed: %s", url, e)
+            continue
+        p = parse_mpc(re.sub(r"\s+", " ", text))
+        if "decision" not in p and "cbe_odr" in p:  # fall back to the rate change vs the previous meeting
+            prev = conn.execute("SELECT value FROM observations WHERE series_id='cbe_odr' AND obs_date<? ORDER BY obs_date DESC LIMIT 1", (d,)).fetchone()
+            if prev:
+                p["decision"] = 1 if p["cbe_odr"] > prev[0] + 1e-9 else -1 if p["cbe_odr"] < prev[0] - 1e-9 else 0
+        if "decision" not in p:
+            continue
+        rows += add_obs(conn, "cbe_mpc_decision", d, p["decision"], unit="code", source_name="Central Bank of Egypt — MPC press release",
+                        source_url=url, quality_flag="official", obs_note="+1 raise, 0 hold, -1 cut") != "same"
+        if "cbe_odr" in p:
+            rows += add_obs(conn, "cbe_odr", d, p["cbe_odr"], unit="%", source_name="Central Bank of Egypt — MPC press release",
+                            source_url=url, quality_flag="official") != "same"
+        conn.commit()
     return rows

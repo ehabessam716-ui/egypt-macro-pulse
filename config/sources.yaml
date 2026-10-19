@@ -44,6 +44,13 @@ sources:
     access: SCRAPE
     notes: "EGX's own nationality-flow data sits behind an anti-bot wall, so the figures are read from press reports that quote it. robots.txt of both sites allows crawling. Each value keeps its article URL; quality 'secondary'. Sign: negative = foreign net selling."
     series: [egx_foreign_net, tbill_foreign_net]
+  - id: imf_sdmx
+    name: IMF data API (SDMX, keyless) — Egypt CPI by category and USD/EGP monthly average
+    url: https://api.imf.org/external/sdmx/2.1/data/IMF.STA,CPI/EGY.CPI._T.IX.M
+    kind: imf_sdmx
+    access: FREE_API
+    notes: "Long monthly history (CPI from 2010, FX from 2005) for the impact model and its backtest."
+    series: [cpi_imf_all, cpi_imf_food, cpi_imf_housing, cpi_imf_health, cpi_imf_transport, fx_imf_avg]
   - id: egx
     name: Egyptian Exchange (foreign net flows bulletin)
     url: https://www.egx.com.eg/en/homepage.aspx

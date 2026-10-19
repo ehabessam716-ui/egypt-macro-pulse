@@ -228,6 +228,34 @@ def build_fx_story(v: DataView, quotes: list[dict], cbe: dict | None, mid: dict 
                   "لو المخاطر في المنطقة هديت، الأموال الساخنة غالبا بترجع بنفس سرعة ما خرجت، عشان العائد العالي في مصر."], "now": None},
     ]
 
+    # impact outlook: what prices do if this persists, odds, tested accuracy, ranked reasons
+    impact = None
+    try:
+        from .impact import build_impact
+        impact = build_impact(v, move, move / max(days, 1) * 30)
+    except Exception:  # noqa: BLE001
+        impact = None
+    reasons = []
+    if impact:
+        allc = next(c for c in impact["cats"] if c["id"] == "all")
+        reasons.append(["Inflation already in the pipeline: prices rose at a pace worth " + f"{allc['pace']:.1f}% every 6 months over the past year — this momentum is most of the outlook.",
+                        "تضخم موجود أصلا: الأسعار كانت بتزيد بسرعة تساوي " + f"{allc['pace']:.1f}% كل 6 شهور في آخر سنة، والسرعة دي هي أغلب التوقع."])
+        big = sorted([c for c in impact["cats"] if c["id"] != "all" and c["test"].get("large")], key=lambda c: -c["test"]["large"]["extra_med"])  # history-based, valid even if a category series is not current
+        if big:
+            b0 = big[0]
+            reasons.append([f"Dollar-priced imports: after past large dollar jumps, {b0['title'][0].lower()} rose the most — a median {b0['test']['large']['extra_med']:+.1f} points above its usual pace.",
+                            f"الواردات اللي بتتسعر بالدولار: بعد قفزات الدولار الكبيرة اللي فاتت، {b0['title'][1]} زادت أكتر حاجة، بمتوسط {b0['test']['large']['extra_med']:+.1f} نقطة فوق سرعتها العادية."])
+        reasons.append(["Administered prices move in steps: fuel (pricing committee) and medicine (drug authority) change only when officials decide, so part of the effect arrives later.",
+                        "الأسعار المحددة إداريا بتتحرك على خطوات: الوقود (لجنة التسعير) والأدوية (هيئة الدواء) بيتغيروا لما المسؤولين يقرروا، فجزء من التأثير بيوصل متأخر."])
+        gi2 = v.latest("fx_gold_implied")
+        if gi2:
+            g2 = _pct(gi2.value, now_v)
+            reasons.append([f"Expectations: people rushing to dollars and gold would speed it up — today gold implies {g2:+.1f}% vs official, " + ("so no rush yet." if abs(g2) < 3 else "a sign of hedging."),
+                            f"التوقعات: لو الناس جريت على الدولار والدهب الحركة هتسرع، والنهارده دولار الدهب {g2:+.1f}% عن الرسمي، " + ("يعني لسه مفيش جري." if abs(g2) < 3 else "وده علامة تحوط.")])
+        if hm["headline"]:
+            reasons.append([f"Hot money: foreign investors' net flows were {hm['headline'][0]} — if selling continues, the dollar keeps rising; if it stops, the pressure fades.",
+                            f"الأموال الساخنة: صافي تعاملات الأجانب {hm['headline'][1]}، لو البيع استمر الدولار هيكمل، ولو وقف الضغط هيخف."])
+
     if direction == "up":
         title = [f"Why is the dollar rising? +{move:.1f}% in {days} days", f"ليه الدولار بيزيد؟ +{move:.1f}% في {days} يوم"]
     elif direction == "down":
@@ -240,6 +268,6 @@ def build_fx_story(v: DataView, quotes: list[dict], cbe: dict | None, mid: dict 
                f"من {_f(o0.value)} يوم {o0.date:%d/%m} لـ {_f(now_v)} دلوقتي (البنك المركزي). والبيانات بتشاور أساسا على: {lead_ar}."]
     return {"direction": direction, "move_pct": round(move, 2), "days": days, "from": o0.value, "from_date": o0.date.isoformat(),
             "to": now_v, "to_date": now_date, "mid": mid["usd_egp"] if mid else None, "title": title, "summary": summary,
-            "why": why, "if_continues": cont, "levers": levers if direction == "up" else levers[-1:],
+            "why": why, "if_continues": cont, "impact": impact, "reasons": reasons, "levers": levers if direction == "up" else levers[-1:],
             "sources": [cbe_src], "note": ["Signals consistent with the move — not proof of cause. The playbook is what usually happens, not a forecast.",
                                          "دي علامات متماشية مع الحركة، مش إثبات للسبب. والخطوات المتوقعة هي اللي بيحصل عادة، مش توقع أكيد."]}

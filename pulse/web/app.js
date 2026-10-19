@@ -994,8 +994,57 @@
       ${row(A ? 'التضخم والاحتياطي والتحويلات' : 'Inflation, reserves, remittances', A ? 'أول ما الجهة الرسمية تنشر (شهري)' : 'as soon as the official source publishes (monthly)')}</table></div>`;
   }
 
+  // ================================================================== IMPACT: if it persists — prices, odds, tested accuracy
+  function oddsChips(I) {
+    const A = AR(), o = I.odds || {}, out = [];
+    const pct = (k, n) => Math.round((100 * k) / n);
+    if (o.keeps_rising) { const x = o.keeps_rising;
+      out.push([pct(x.up, x.n), A ? 'الدولار يزيد تاني الشهر الجاي' : 'Dollar rises again next month',
+        A ? `${x.up} من ${x.n} مرة من ${x.since} بعد زيادة 2% أو أكتر في شهر` : `${x.up} of ${x.n} times since ${x.since} after a ≥2% month`, 'p']); }
+    if (o.escalates) { const x = o.escalates;
+      out.push([pct(x.k, x.n), A ? 'يتحول لتخفيض كبير (+8% في 3 شهور)' : 'Turns into a big devaluation (+8% in 3 months)',
+        A ? `${x.k} من ${x.n} حركة متوسطة من ${x.since}` : `${x.k} of ${x.n} moderate moves since ${x.since}`, 'w']); }
+    if (o.cbe_hikes) { const x = o.cbe_hikes;
+      out.push([pct(x.k, x.n), A ? 'البنك المركزي يرفع الفايدة خلال 3 شهور' : 'CBE raises rates within 3 months',
+        A ? `${x.k} من ${x.n} حركة دولار من ${x.since}` : `${x.k} of ${x.n} dollar moves since ${x.since}`, 'n']); }
+    return out.map(([p, t1, t2, c]) => `<div class="odd odd-${c}"><b class="num">${p}%</b><span>${esc(t1)}</span><em>${esc(t2)}</em></div>`).join('');
+  }
+  function impactSection(X) {
+    const I = X.impact; if (!I) return '';
+    const A = AR();
+    const fmt = (o) => !o ? '—' : o.mid != null
+      ? `<b class="num">${o.mid > 0 ? '+' : ''}${nf(o.mid, 1)}%</b>${o.lo != null ? `<small class="num">${nf(o.lo, 0)}% … ${nf(o.hi, 0)}%</small>` : ''}`
+      : `<b class="num xtra">${o.extra > 0 ? '+' : ''}${nf(o.extra, 1)} ${A ? 'نقطة' : 'pts'}</b>${o.xlo != null ? `<small class="num">${nf(o.xlo, 0)} … ${nf(o.xhi, 0)}</small>` : ''}`;
+    const rows = I.cats.map((c) => `<tr><th>${esc(L2(c.title))}${c.stale ? `<small class="stale-n">${esc(A ? `أثر الدولار بس · بيانات الفئة لحد ${c.data_to}` : `dollar effect only · category data to ${c.data_to}`)}</small>` : ''}</th><td>${fmt(c.now)}</td><td>${fmt(c.more)}</td></tr>`).join('');
+    const allc = I.cats.find((c) => c.id === 'all');
+    const g = I.group_now === 'small' ? 'moderate' : I.group_now, T = (allc && allc.test[g]) || {};
+    const conf = I.confidence === 'medium' ? (A ? 'متوسطة' : 'medium') : (A ? 'منخفضة' : 'low');
+    const more = I.f3_now + I.pace_month;
+    const reasons = (X.reasons || []).map((r) => `<li>${A ? bidi(esc(L2(r))) : esc(L2(r))}</li>`).join('');
+    return `<h2 class="sec">${esc(A ? 'لو فضل كده: الأسعار هتزيد قد إيه؟' : 'If it persists: how much will prices rise?')}</h2>
+      <section class="card imp">
+        <div class="odds">${oddsChips(I)}</div>
+        <p class="small muted">${esc(A ? `الدولار زاد ${nf(I.f3_now, 1)}% في آخر 3 شهور (حركة ${I.group_now === 'large' ? 'كبيرة' : I.group_now === 'moderate' ? 'متوسطة' : 'صغيرة'}). الجدول بيقول الأسعار ممكن تزيد قد إيه في الـ ${I.h} شهور الجايين:` :
+          `The dollar is up ${nf(I.f3_now, 1)}% over 3 months (a ${I.group_now} move). Expected price rise over the next ${I.h} months:`)}</p>
+        <div class="tblwrap"><table class="tbl imp-t"><tr><th></th><th>${esc(A ? 'لو الدولار وقف هنا' : 'If the dollar stays here')}</th>
+          <th>${esc(A ? `لو كمّل بنفس السرعة شهر كمان (~${nf(more, 0)}% في 3 شهور)` : `If it keeps rising 1 more month (~${nf(more, 0)}% in 3 months)`)}</th></tr>${rows}</table></div>
+        <div class="acc"><span class="acc-b acc-${I.confidence}">${esc(A ? 'الثقة' : 'Confidence')}: ${esc(conf)}</span>
+          <span>${esc(A ? `اتختبر على ${T.n || 0} مرة حصلت قبل كده: الغلط في المتوسط ±${nf(T.mae, 1)} نقطة، والنتيجة الحقيقية جت جوه المدى ${T.hits || 0} من ${T.n || 0} مرات. (قاعدة "نفس السرعة" البسيطة غلطها ±${nf(T.naive_mae, 1)})` :
+            `Tested on ${T.n || 0} past episodes: average error ±${nf(T.mae, 1)} points; the real outcome landed inside the range ${T.hits || 0} of ${T.n || 0} times. (The simple "same pace" rule: ±${nf(T.naive_mae, 1)})`)}</span></div>
+        <h3 class="imp-h">${esc(A ? 'ليه؟ الأسباب بالترتيب' : 'Why — the reasons, in order')}</h3><ol class="reasons">${reasons}</ol>
+        <p class="tiny muted">${esc(L2(I.method))} · ${(I.sources || []).map((x) => `<a href="${safeUrl(x.url)}" target="_blank" rel="noopener"><bdi>${esc(x.name)}</bdi></a>`).join(' · ')}</p>
+      </section>`;
+  }
+
   // ================================================================== WHY IS THE DOLLAR MOVING? (explainer, from live.js fx_story)
   const STRENGTH = { strong: ['p', 'Main reason', 'سبب رئيسي'], some: ['w', 'Adds pressure', 'بيزود الضغط'], none: ['n', 'Ruled out', 'مش السبب'] };
+  function impTeaser(X) {
+    const I = X.impact; if (!I) return '';
+    const c = I.cats.find((x) => x.id === 'all'), k = I.odds && I.odds.keeps_rising;
+    if (!c) return '';
+    const p = k ? Math.round((100 * k.up) / k.n) : null;
+    return `<div class="wc-imp">${(AR() ? (x) => bidi(esc(x)) : esc)(AR() ? `لو فضل كده: الأسعار +${nf(c.now.mid, 1)}% في ${I.h} شهور` : `If it persists: prices +${nf(c.now.mid, 1)}% in ${I.h} months`)}${c.now.lo != null ? ` <small class="num">(${nf(c.now.lo, 0)}…${nf(c.now.hi, 0)}%)</small>` : ''}${p != null ? ` · ${(AR() ? (x) => bidi(esc(x)) : esc)(AR() ? `احتمال الدولار يزيد تاني الشهر الجاي ${p}%` : `${p}% chance the dollar rises again next month`)}` : ''}</div>`;
+  }
   function whyCard() {
     const X = S.L && S.L.fx_story;
     if (!X) return '';
@@ -1005,6 +1054,7 @@
       <div class="wc-top"><span class="wc-ic">${X.direction === 'up' ? '📈' : X.direction === 'down' ? '📉' : '➖'}</span>
         <div><b>${esc(L2(X.title))}</b><p>${AR() ? bidi(esc(L2(X.summary))) : esc(L2(X.summary))}</p></div></div>
       ${main.length ? `<div class="wc-chips">${main.map((w) => `<span class="wc-chip s-${STRENGTH[w.strength][0]}">${w.icon} ${esc(L2(w.title))}</span>`).join('')}</div>` : ''}
+      ${impTeaser(X)}
       <span class="wc-go">${esc(AR() ? 'افهم السبب وإيه اللي جاي ←' : 'Why, and what happens next →')}</span></a>`;
   }
   function viewWhy() {
@@ -1030,6 +1080,7 @@
         <div class="tiny muted">${src(X.sources)}${X.mid ? ` · ${esc(A ? 'السوق لحظي' : 'mid-market now')} <span class="num">${nf(X.mid, 2)}</span> (Coinbase)` : ''}</div></section>
       <h2 class="sec">${esc(A ? '1. ليه بيحصل كده؟' : '1. Why is this happening?')}</h2><div class="wys">${why}</div>
       ${cont ? `<h2 class="sec">${esc(A ? '2. لو فضل يزيد، إيه اللي هيحصل؟' : '2. If it keeps rising, what happens?')}</h2><section class="card"><ul class="changes cont">${cont}</ul></section>` : ''}
+      ${impactSection(X)}
       <h2 class="sec">${esc(A ? (cont ? '3. إيه اللي ممكن يوقفه؟' : '2. إيه اللي ممكن يغيّر الاتجاه؟') : (cont ? '3. What could slow it down?' : '2. What could change the direction?'))}</h2>
       <p class="small muted">${esc(A ? 'دي الأدوات اللي البنك المركزي والحكومة بيستخدموها عادة، ومعاها الوضع النهارده.' : 'The tools the Central Bank and government usually use, with where each stands today.')}</p>
       <div class="lvs">${lev}</div>
