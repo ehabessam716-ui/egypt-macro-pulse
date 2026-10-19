@@ -1,4 +1,4 @@
-# Live layer: every ~15 minutes, refresh intraday market quotes + live insights and republish the site.
+# Live layer: every ~5 minutes, refresh intraday market quotes + live insights and republish the site.
 # Takes the last full site from the "state" release (saved by the main Pulse workflow), so nothing else changes.
 name: Pulse live
 
@@ -56,7 +56,7 @@ jobs:
       - id: deployment
         uses: actions/deploy-pages@v4
 
-  # GitHub's cron for frequent schedules is unreliable on new repos, so each run starts the next one ~15 minutes
+  # GitHub's cron for frequent schedules is unreliable on new repos, so each run starts the next one ~5 minutes
   # later (workflow_dispatch from GITHUB_TOKEN is allowed). If another live run is already queued or running,
   # this run does not chain, so there is only ever one chain. Cron + the main workflow restart it if it stops.
   next:
@@ -69,7 +69,7 @@ jobs:
     steps:
       - name: Wait, then start the next live refresh
         run: |
-          sleep 780
+          sleep 150
           others=$(gh run list -R "$GITHUB_REPOSITORY" --workflow live.yml --json databaseId,status                    --jq "[.[] | select((.status==\"queued\" or .status==\"in_progress\" or .status==\"waiting\" or .status==\"pending\") and .databaseId != ${{ github.run_id }})] | length")
           if [ "$others" -gt 0 ]; then echo "another live run is active ($others) — not chaining"; exit 0; fi
           gh workflow run live.yml -R "$GITHUB_REPOSITORY"

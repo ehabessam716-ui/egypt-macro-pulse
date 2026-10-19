@@ -30,6 +30,13 @@ sources:
     access: FREE_API
     tickers: ["EGP=X", "BZ=F", "CL=F", "GC=F", "SI=F", "ZW=F", "TTF=F", "DX-Y.NYB", "EEM", "^CASE30", "COMI.CA", "CBKD.IL", "HRHO.CA", "TMGH.CA", "ETEL.CA"]
     series: [fx_market, brent_fut, wti_fut, xauusd, xagusd, wheat, ttf_fut, dxy, msci_em_proxy, egx30, cib_local, cib_gdr, efg_hermes, tmg_stock, etel_stock]
+  - id: coinbase_rates
+    name: Coinbase public exchange rates (mid-market, unofficial)
+    url: https://api.coinbase.com/v2/exchange-rates?currency=USD
+    kind: live_only
+    access: FREE_API
+    notes: "Keyless public API, CORS-enabled, refreshed about every minute. Mid-market USD/EGP — the same kind of rate Google shows (Google itself is not scraped: its terms forbid automated access). Used only by the live layer (browser every 30 s, server every ~5 min); never written to the official observations table."
+    series: []
   - id: egx
     name: Egyptian Exchange (foreign net flows bulletin)
     url: https://www.egx.com.eg/en/homepage.aspx

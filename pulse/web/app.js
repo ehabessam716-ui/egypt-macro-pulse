@@ -66,8 +66,8 @@
     rose: ['rose', 'زاد'], fell: ['fell', 'قل'], flat: ['was unchanged', 'فضل ثابت'], from_: ['from', 'من'], to_: ['to', 'لـ'],
     if_rises: ['If it rises', 'لو زاد'], if_falls: ['If it falls', 'لو قل'],
     no_history: ['Only one reading so far — history builds from now.', 'فيه قراءة واحدة بس لحد دلوقتي، والتاريخ هيتبني من النهارده.'],
-    right_now: ['Right now', 'دلوقتي'], live_note: ['Delayed market quotes, refreshed automatically about every 15 minutes. Official figures update when the source publishes.',
-      'أسعار السوق متأخرة شوية وبتتحدث لوحدها كل ربع ساعة تقريبا، والأرقام الرسمية بتتحدث لما المصدر ينشر.'],
+    right_now: ['Right now', 'دلوقتي'], live_note: ['Delayed market quotes, refreshed automatically about every 5 minutes. Official figures update when the source publishes.',
+      'أسعار السوق متأخرة شوية وبتتحدث لوحدها كل 5 دقايق تقريبا، والأرقام الرسمية بتتحدث لما المصدر ينشر.'],
     live_reads: ['Live reads', 'قراءة سريعة'], headlines: ['Latest headlines', 'آخر الأخبار'], closed_mkt: ['closed', 'مقفول'],
     open_mkt: ['live', 'شغال'], cbe_today: ['CBE official rate', 'السعر الرسمي للبنك المركزي'], gold21_now: ['Gold 21K in Egypt', 'جرام الدهب عيار 21'],
     prices_updated: ['prices updated', 'الأسعار اتحدثت'],
@@ -505,8 +505,10 @@
       }
       S.lastPoll = Date.now();
       priceBar();
-      { const el = $('#bigSlot'); if (el) el.outerHTML = bigNumbers(); }
-      if (!old) { if (S.mode === 'simple' && S.route === 'home') render(true); else { const el = $('#liveSlot'); if (el) el.innerHTML = liveSection(); } }
+      if (!old || old.generated !== L.generated) {
+        if (((S.mode === 'simple' && (S.route === 'home' || S.route === 'live' || S.route === 'why')) || (S.mode === 'pro' && S.route === 'overview' && !old)) && !S.scrubbing && !$('#drawer').classList.contains('open')) render(true);
+        else if (!old) { const el = $('#liveSlot'); if (el) el.innerHTML = liveSection(); }
+      }
     } catch (e) { /* live.js not published yet */ }
     updateLive();
   }
@@ -586,31 +588,6 @@
       ${big(t('big_oil'), oil ? '$' + nf(oil, 0) : '—', t('per_barrel'), AR() ? 'مقابل <span class="num">75</span> دولار في الموازنة' : 'vs $75 in the budget')}
     </div>`;
   }
-  function viewHome() {
-    const D = S.D, h = D.headline || {};
-    const [vc] = verdict(D.ppi.value);
-    const changes = D.rules.filter((r) => r.fired && r.direction !== 0).sort((a, b) => b.strength - a.strength).slice(0, 4)
-      .map((r) => `<li class="${r.direction > 0 ? 'p' : 'r'}">${AR() ? bidi(esc(r.ar || r.en)) : esc(r.en)}</li>`).join('');
-    return `<div class="view simple">
-      <section class="hero2 verdict-bg-${vc}">
-        <div class="eyebrow">${esc(fmtDate(D.as_of))} · ${esc(t('ppi'))} <span class="num">${D.ppi.value == null ? '—' : (D.ppi.value > 0 ? '+' : '') + nf(D.ppi.value, 0)}/100</span></div>
-        <h1 class="h2-sent">${esc(AR() ? h.ar : h.en)}</h1>
-        ${(AR() ? h.good_ar : h.good_en) ? `<p class="h2-good">${esc(AR() ? h.good_ar : h.good_en)}</p>` : ''}
-        ${bigNumbers()}
-      </section>
-      ${chainMap()}
-      <div id="liveSlot" class="simple-live">${liveSection()}</div>
-      ${lessonsRow()}
-      ${changes ? `<section class="card"><h3>${esc(t('what_changed'))}</h3><ul class="changes">${changes}</ul></section>` : ''}
-      <p style="text-align:center;margin:22px 0"><button class="btn" type="button" data-mode="pro">⚙ ${esc(t('go_pro'))}</button></p>
-      <p class="disclaimer">${esc(t('disclaimer'))}</p></div>`;
-  }
-  function viewLearn() {
-    return `<div class="view simple"><div class="page-head"><div><h1>${esc(t('lessons_title'))}</h1><p>${esc(t('lessons_hint'))}</p></div></div>
-      ${lessonsRow(true)}${chainMap()}</div>`;
-  }
-  function viewLiveSimple() { return `<div class="view simple"><div id="liveSlot">${liveSection()}</div></div>`; }
-
   // node tutor card (opens in the side panel); in tour mode it shows Back/Next
   function openNode(id) {
     const n = nodeById(id);
@@ -685,6 +662,374 @@
       ${rel ? `<section class="card"><h3>${esc(t('related_boxes'))}</h3><div class="chips2">${rel}</div></section>` : ''}</div>`;
   }
 
+  // ================================================================== LIVE ENGINE (browser)
+  // Mid-market FX straight from Coinbase's public rates API (keyless, CORS, refreshed ~every minute).
+  // Same kind of rate Google shows. Polled every 30 s while the page is visible.
+  const MID_URL = 'https://api.coinbase.com/v2/exchange-rates?currency=USD';
+  const MID_SRC = { name: 'Coinbase public rates (mid-market, unofficial)', url: 'https://www.coinbase.com/converter/usd/egp' };
+  S.mid = null; S.ticks = []; S.midErr = 0;
+  async function pollMid() {
+    if (document.hidden) return;
+    try {
+      const r = await fetch(MID_URL, { cache: 'no-store' });
+      if (!r.ok) throw new Error(r.status);
+      const j = await r.json();
+      const R = j.data.rates;
+      const egp = +R.EGP;
+      if (!egp) throw new Error('no EGP');
+      const cross = (c) => (R[c] ? egp / +R[c] : null);
+      const old = S.mid;
+      S.mid = { usd: egp, eur: cross('EUR'), gbp: cross('GBP'), sar: cross('SAR'), aed: cross('AED'), kwd: cross('KWD'),
+        at: new Date().toISOString(), src: 'browser' };
+      S.ticks.push([Date.now(), egp]); if (S.ticks.length > 600) S.ticks.shift();
+      S.midErr = 0;
+      onLiveTick(old);
+    } catch (e) { S.midErr++; }
+  }
+  // fall back to the server copy (published every ~5 min) when the browser can't reach Coinbase
+  function midNow() {
+    if (S.mid) return S.mid;
+    const m = S.L && S.L.mid;
+    return m ? { usd: m.usd_egp, eur: m.eur_egp, gbp: m.gbp_egp, sar: m.sar_egp, aed: m.aed_egp, kwd: m.kwd_egp, at: m.ts, src: 'server' } : null;
+  }
+  // today's first mid reading (Cairo) — the base for "today" change on the live dollar
+  function midDayBase() {
+    const h = S.L && S.L.hist && S.L.hist.usd_mid;
+    if (!h || !h.length) return null;
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Cairo' });
+    const first = h.find((p) => p[0].slice(0, 10) === today);
+    return first && Date.now() - new Date(first[0]).getTime() > 3600e3 ? first[1] : null;
+  }
+  function onLiveTick(old) {
+    ticker();
+    const m = midNow();
+    if (!m) return;
+    const el = $('#dollarNow');
+    if (el && !S.scrubbing) rollTo(el, m.usd, 2, old ? Math.sign(m.usd - old.usd) : 0);
+    const ag = $('#dollarAgo'); if (ag) ag.textContent = secsAgo(m.at);
+    const chg = $('#dollarChg'); if (chg) chg.outerHTML = dollarChange();
+    if (S.dRange === '1D') drawDollar();
+    $$('[data-mid]').forEach((e) => { const v = m[e.dataset.mid]; if (v) e.textContent = nf(v, 2); });
+  }
+  const secsAgo = (iso) => { if (!iso) return ''; const s = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 1000));
+    if (s < 60) return AR() ? `من ${s} ثانية` : `${s}s ago`; return ago(iso); };
+
+  // number roll + flash
+  function rollTo(el, to, d, dir) {
+    const from = parseFloat((el.textContent || '').replace(/,/g, ''));
+    if (!isFinite(from) || from === to) { el.textContent = nf(to, d); return; }
+    const t0 = performance.now(), dur = 700;
+    const step = (now) => { const k = Math.min(1, (now - t0) / dur); const e = 1 - Math.pow(1 - k, 3);
+      el.textContent = nf(from + (to - from) * e, d); if (k < 1) requestAnimationFrame(step); };
+    requestAnimationFrame(step);
+    if (dir) { el.classList.remove('fl-up', 'fl-dn'); void el.offsetWidth; el.classList.add(dir > 0 ? 'fl-up' : 'fl-dn'); }
+  }
+
+  // ================================================================== TICKER TAPE (auto-scrolling, updates in place)
+  function tapeItems() {
+    const L = S.L, m = midNow(), F = liveFx(), out = [];
+    const q = (id) => (L ? L.quotes.find((x) => x.id === id) : null);
+    const base = midDayBase();
+    if (m) out.push({ k: 'usd', l: AR() ? 'الدولار لحظي' : 'USD/EGP live', v: nf(m.usd, 2), c: base ? (m.usd / base - 1) * 100 : null, s: 1, hot: 1 });
+    if (F.cbe) out.push({ k: 'cbe', l: AR() ? 'البنك المركزي' : 'CBE rate', v: nf(F.cbe, 2) });
+    if (F.gold) out.push({ k: 'goldfx', l: AR() ? 'دولار الدهب' : 'Gold-implied $', v: nf(F.gold, 2) });
+    if (L && L.gold_eg) out.push({ k: 'g21', l: AR() ? 'دهب 21' : 'Gold 21K', v: nf(L.gold_eg.k21, 0) + (AR() ? ' ج' : ' EGP') });
+    for (const [id, en, ar, d, pre] of [['egx30', 'EGX30', 'البورصة', 0, ''], ['brent', 'Brent', 'برنت', 2, '$'], ['gold', 'Gold', 'الدهب', 0, '$'],
+      ['cib_gdr', 'CIB London', 'التجاري لندن', 2, '$'], ['dxy', 'DXY', 'مؤشر الدولار', 2, ''], ['vix', 'VIX', 'مؤشر الخوف', 2, ''],
+      ['us10y', 'US 10Y', 'عائد أمريكا', 2, ''], ['wheat', 'Wheat', 'القمح', 0, '']]) {
+      const x = q(id); if (x) out.push({ k: id, l: AR() ? ar : en, v: pre + nf(x.price, d) + (id === 'us10y' ? '%' : ''), c: x.chg_pct, s: x.sign });
+    }
+    if (m) for (const [k, en, ar] of [['eur', 'EUR/EGP', 'اليورو'], ['gbp', 'GBP/EGP', 'الاسترليني'], ['sar', 'SAR/EGP', 'الريال'], ['aed', 'AED/EGP', 'الدرهم']])
+      if (m[k]) out.push({ k, l: AR() ? ar : en, v: nf(m[k], 2) });
+    return out;
+  }
+  function tapeCell(x) {
+    const cls = x.c == null ? '' : (Math.sign(x.c) * (x.s || 0) > 0 ? 'p' : Math.sign(x.c) * (x.s || 0) < 0 ? 'r' : 'n');
+    return `<span class="tk${x.hot ? ' hot' : ''}" data-tk="${x.k}"><span class="tk-l">${x.hot ? '<i class="live-dot"></i>' : ''}${esc(x.l)}</span>` +
+      `<b class="num tk-v">${x.v}</b>${x.c == null ? '' : `<i class="num tk-c ${cls}">${x.c > 0 ? '▲' : x.c < 0 ? '▼' : '■'}${nf(Math.abs(x.c), 2)}%</i>`}</span>`;
+  }
+  function ticker() {
+    const el = $('#pricebar');
+    if (!el || !S.D) return;
+    const items = tapeItems();
+    const sig = S.lang + items.map((x) => x.k).join(',');
+    if (el.dataset.sig !== sig) {           // structure changed → rebuild (rare)
+      const row = items.map(tapeCell).join('');
+      el.innerHTML = `<div class="tape-track" dir="ltr"><div class="tape-run">${row}</div><div class="tape-run" aria-hidden="true">${row}</div></div>`;
+      el.dataset.sig = sig;
+      const run = $('.tape-run', el);
+      requestAnimationFrame(() => { const w = run.scrollWidth; el.style.setProperty('--tape-dur', Math.max(25, w / 45) + 's'); });
+      return;
+    }
+    for (const x of items) {                 // in place: the tape keeps moving, changed numbers flash
+      $$(`[data-tk="${x.k}"]`, el).forEach((cell) => {
+        const v = $('.tk-v', cell);
+        if (v.textContent !== x.v.replace(/<[^>]+>/g, '')) {
+          v.textContent = x.v; cell.classList.remove('flash'); void cell.offsetWidth; cell.classList.add('flash');
+        }
+        const c = $('.tk-c', cell);
+        if (c && x.c != null) c.textContent = `${x.c > 0 ? '▲' : x.c < 0 ? '▼' : '■'}${nf(Math.abs(x.c), 2)}%`;
+      });
+    }
+  }
+
+  // ================================================================== DOLLAR HERO (Google-Finance style)
+  S.dRange = store('pulse.drange') || '1D';
+  const D_RANGES = [['1D', 1], ['1W', 7], ['1M', 31], ['1Y', 366], ['5Y', 1830]];
+  function dollarChange() {
+    const m = midNow(), base = midDayBase();
+    if (!m || !base) {
+      const q = S.L && S.L.quotes.find((x) => x.id === 'usd_egp');
+      if (!q || q.chg == null) return `<span id="dollarChg" class="dchg n">${esc(AR() ? 'سعر لحظي' : 'live rate')}</span>`;
+      const cl = q.chg > 0 ? 'p' : q.chg < 0 ? 'r' : 'n';
+      return `<span id="dollarChg" class="dchg ${cl}"><span class="num">${q.chg > 0 ? '+' : q.chg < 0 ? '−' : ''}${nf(Math.abs(q.chg), 2)} (${q.chg_pct > 0 ? '+' : ''}${nf(q.chg_pct, 2)}%)</span> ${esc(AR() ? 'النهارده في السوق (ياهو)' : 'today in the market (Yahoo)')}</span>`;
+    }
+    const c = m.usd - base, pct = (m.usd / base - 1) * 100;
+    const cls = c > 0 ? 'p' : c < 0 ? 'r' : 'n';
+    return `<span id="dollarChg" class="dchg ${cls}"><span class="num">${c > 0 ? '+' : c < 0 ? '−' : ''}${nf(Math.abs(c), 2)} (${pct > 0 ? '+' : ''}${nf(pct, 2)}%)</span> ${esc(AR() ? 'النهارده' : 'today')}</span>`;
+  }
+  function dollarHero() {
+    const m = midNow(), F = liveFx();
+    const big = m ? m.usd : F.cbe;
+    const ranges = D_RANGES.map(([r]) => `<button type="button" data-drange="${r}" aria-pressed="${S.dRange === r}">${r}</button>`).join('');
+    const pill = (k, label, v, extra = '') => v ? `<div class="dpill"><span>${esc(label)}</span><b class="num"${k ? ` data-mid="${k}"` : ''}>${nf(v, 2)}</b>${extra}</div>` : '';
+    const gap = F.gold && F.cbe ? (F.gold / F.cbe - 1) * 100 : null;
+    return `<section class="card dhero">
+      <div class="dh-top"><span class="dh-label">${esc(AR() ? 'الدولار الأمريكي ← جنيه مصري' : 'US Dollar → Egyptian Pound')}</span>
+        <span class="dh-live"><i class="live-dot"></i>${esc(AR() ? 'مباشر' : 'LIVE')}</span></div>
+      <div class="dh-price"><span class="num" id="dollarNow" dir="ltr">${big ? nf(big, 2) : '—'}</span><small>${esc(AR() ? 'جنيه' : 'EGP')}</small></div>
+      <div class="dh-sub">${dollarChange()} · <span id="dollarAgo">${esc(m ? secsAgo(m.at) : '')}</span></div>
+      <div class="dh-chart" id="dChart" aria-label="USD/EGP chart"></div>
+      <div class="dh-ranges" role="group">${ranges}</div>
+      <div class="dpills">
+        ${pill('', AR() ? 'البنك المركزي (شراء)' : 'CBE official (buy)', F.cbe)}
+        ${pill('', AR() ? 'دولار الدهب' : 'Gold-implied', F.gold, gap == null ? '' : `<i class="num ${Math.abs(gap) < 3 ? 'n' : 'p'}">${gap > 0 ? '+' : ''}${nf(gap, 1)}%</i>`)}
+        ${pill('usd', AR() ? 'السوق لحظي' : 'Mid-market live', m && m.usd)}
+      </div>
+      <p class="tiny muted dh-src">${esc(AR() ? 'السعر اللحظي من' : 'Live rate:')} <a href="${MID_SRC.url}" target="_blank" rel="noopener">Coinbase ↗</a> ${esc(AR() ? '(نفس نوع السعر اللي بيعرضه جوجل) · كل 30 ثانية. الرسمي من البنك المركزي يوميا.' : '(the same mid-market rate Google shows) · every 30 s. Official rate: CBE, daily.')}</p>
+    </section>`;
+  }
+  async function dollarPoints() {
+    const r = S.dRange;
+    if (r === '1D') {
+      const h = ((S.L && S.L.hist && S.L.hist.usd_mid) || []).map((p) => [new Date(p[0]).getTime(), p[1]]);
+      const pts = h.concat(S.ticks.filter((t) => !h.length || t[0] > h[h.length - 1][0]));
+      const since = Date.now() - 26 * 3600 * 1000;
+      const out = pts.filter((p) => p[0] >= since);
+      if (out.length >= 6 && out[out.length - 1][0] - out[0][0] > 3600e3) { S.dSrc = AR() ? 'السعر اللحظي (Coinbase)' : 'live mid-market (Coinbase)'; return out; }
+      const q = S.L && S.L.quotes.find((x) => x.id === 'usd_egp');   // live history still building → today's market bars
+      S.dSrc = AR() ? 'السوق خلال اليوم (ياهو، متأخر)' : 'intraday market (Yahoo, delayed)';
+      return q && q.spark ? q.spark.map((p) => [new Date(p[0]).getTime(), p[1]]) : [];
+    }
+    const days = D_RANGES.find((x) => x[0] === r)[1];
+    S.dSrc = AR() ? 'السعر الرسمي للبنك المركزي' : 'CBE official rate';
+    const p = await loadSeries('fx_cbe_official');
+    const since = Date.now() - days * 86400000;
+    return p.rows.map((x) => [new Date(x[0] + 'T12:00:00').getTime(), x[1]]).filter((x) => x[0] >= since);
+  }
+  async function drawDollar() {
+    const box = $('#dChart');
+    if (!box) return;
+    const pts = await dollarPoints();
+    if (!box.isConnected) return;
+    if (pts.length < 2) { box.innerHTML = `<div class="dh-empty">${esc(AR() ? 'التاريخ بيتجمع' : 'history building')}</div>`; return; }
+    const W = 600, H = 170, P = 6;
+    const vals = pts.map((p) => p[1]), mn = Math.min(...vals), mx = Math.max(...vals), sp = mx - mn || 1;
+    const t0 = pts[0][0], t1 = pts[pts.length - 1][0], ts = t1 - t0 || 1;
+    const X = (t) => ((t - t0) / ts) * W, Y = (v) => H - P - ((v - mn) / sp) * (H - 2 * P);
+    const d = pts.map((p, i) => `${i ? 'L' : 'M'}${X(p[0]).toFixed(1)} ${Y(p[1]).toFixed(1)}`).join(' ');
+    const up = vals[vals.length - 1] >= vals[0];
+    const col = up ? 'var(--pressure)' : 'var(--relief)';
+    const lx = X(t1), ly = Y(vals[vals.length - 1]);
+    box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+      <defs><linearGradient id="dg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${col}" stop-opacity=".22"/><stop offset="1" stop-color="${col}" stop-opacity="0"/></linearGradient></defs>
+      <line x1="0" x2="${W}" y1="${Y(vals[0]).toFixed(1)}" y2="${Y(vals[0]).toFixed(1)}" stroke="var(--border-strong)" stroke-dasharray="3 5" vector-effect="non-scaling-stroke"/>
+      <path d="${d} L${W} ${H} L0 ${H} Z" fill="url(#dg)"/>
+      <path class="dh-line" d="${d}" fill="none" stroke="${col}" stroke-width="2.2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>
+      <line class="dh-x" x1="0" x2="0" y1="0" y2="${H}" stroke="var(--text-2)" stroke-width="1" vector-effect="non-scaling-stroke" opacity="0"/>
+    </svg><span class="dh-dot" style="left:${(lx / W * 100).toFixed(2)}%;top:${(ly / H * 100).toFixed(2)}%;background:${col}"></span>
+    <span class="dh-tip" hidden></span>
+    <div class="dh-axis"><span>${esc(axisLbl(t0))}</span><span><span class="num">${nf(mn, 2)} – ${nf(mx, 2)}</span> · ${esc(S.dSrc || '')}</span><span>${esc(axisLbl(t1))}</span></div>`;
+    // scrub: drag / hover to read any point (Robinhood-style)
+    const svg = $('svg', box), xl = $('.dh-x', box), tip = $('.dh-tip', box), now = $('#dollarNow');
+    const at = (ev) => { const r = svg.getBoundingClientRect(); const k = Math.min(1, Math.max(0, (ev.clientX - r.left) / r.width));
+      const tt = t0 + k * ts; let best = 0; for (let i = 1; i < pts.length; i++) if (Math.abs(pts[i][0] - tt) < Math.abs(pts[best][0] - tt)) best = i; return best; };
+    const show = (ev) => { const i = at(ev); const p = pts[i]; S.scrubbing = true;
+      xl.setAttribute('x1', X(p[0])); xl.setAttribute('x2', X(p[0])); xl.setAttribute('opacity', '.5');
+      tip.hidden = false; tip.textContent = axisLbl(p[0], true); tip.style.left = (X(p[0]) / W * 100) + '%';
+      if (now) now.textContent = nf(p[1], 2); };
+    const hide = () => { S.scrubbing = false; xl.setAttribute('opacity', '0'); tip.hidden = true; const m = midNow(); if (now) now.textContent = nf(m ? m.usd : liveFx().cbe, 2); };
+    svg.addEventListener('pointermove', show); svg.addEventListener('pointerdown', show);
+    svg.addEventListener('pointerleave', hide); svg.addEventListener('pointerup', hide); svg.addEventListener('pointercancel', hide);
+  }
+  function axisLbl(ms, full) {
+    const d = new Date(ms), loc = AR() ? 'ar-EG-u-nu-latn' : 'en-GB';
+    if (S.dRange === '1D') return d.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Cairo' }) + (full ? ' ' + d.toLocaleDateString(loc, { day: 'numeric', month: 'short', timeZone: 'Africa/Cairo' }) : '');
+    return d.toLocaleDateString(loc, { day: 'numeric', month: 'short', year: full || S.dRange === '5Y' || S.dRange === '1Y' ? 'numeric' : undefined });
+  }
+
+  // ================================================================== PRESSURE GAUGE
+  function gauge(v) {
+    const ang = v == null ? 0 : Math.max(-90, Math.min(90, v * 0.9));
+    const [vc, vt] = verdict(v);
+    return `<div class="pg"><svg viewBox="0 0 200 112" aria-hidden="true">
+      <defs><linearGradient id="pgG" x1="0" x2="1"><stop offset="0" stop-color="var(--relief)"/><stop offset=".5" stop-color="var(--neutral)"/><stop offset="1" stop-color="var(--pressure)"/></linearGradient></defs>
+      <path d="M14 100 A86 86 0 0 1 186 100" fill="none" stroke="url(#pgG)" stroke-width="14" stroke-linecap="round"/>
+      <g class="pg-needle" style="--ang:${ang}deg"><line x1="100" y1="100" x2="100" y2="30" stroke="var(--text)" stroke-width="3.5" stroke-linecap="round"/></g>
+      <circle cx="100" cy="100" r="7" fill="var(--text)"/></svg>
+      <div class="pg-v"><b class="num">${v == null ? '—' : (v > 0 ? '+' : '') + nf(v, 0)}</b><span class="pill ${vc === 'p' ? 'p' : vc === 'r' ? 'r' : ''}">${esc(vt)}</span></div>
+      <div class="pg-ends"><span>${esc(AR() ? 'راحة' : 'relief')}</span><span>${esc(AR() ? 'ضغط' : 'pressure')}</span></div></div>`;
+  }
+
+  // ================================================================== SIMPLE: TODAY (short, focused)
+  function topThree() {
+    const C = S.D.chain; if (!C) return '';
+    const skip = new Set(['pound', 'life', 'prices']);
+    const hurt = C.nodes.filter((n) => n.status === 1 && !skip.has(n.id)), help = C.nodes.filter((n) => n.status === -1 && !skip.has(n.id));
+    const pick = [...hurt.slice(0, 2), ...help.slice(0, 1)];
+    if (pick.length < 3) pick.push(...hurt.slice(2, 2 + 3 - pick.length));
+    return pick.slice(0, 3).map((n0, i) => { const n = liveNode(n0); const [cls, key] = stOf(n);
+      return `<button class="t3 cn-${cls}" data-node="${n.id}"><span class="t3-n">${i + 1}</span><span class="cn-ic">${n.icon}</span>
+        <span class="t3-b"><b>${esc(L2(n.title))}</b><span>${AR() ? bidi(esc(firstSentence(L2(n.now), 95))) : esc(firstSentence(L2(n.now), 95))}</span></span>
+        <span class="t3-s"><span class="num">${bidi(esc(L2(n.value) || ''))}</span><em>${cls === 'p' ? '▲' : cls === 'r' ? '▼' : '•'} ${esc(t(key))}</em></span></button>`; }).join('');
+  }
+  function exploreTiles() {
+    const ls = S.D.lessons || [];
+    const tile2 = (r, ic, ti, sub) => `<a class="xt" href="#/${r}"><span class="xt-ic">${ic}</span><b>${esc(ti)}</b><span>${esc(sub)}</span></a>`;
+    return `<div class="xtiles">
+      ${tile2('chain', '⛓', AR() ? 'إزاي كله مرتبط' : 'How it connects', AR() ? '16 مربع وجولة دقيقتين' : '16 boxes · 2-min tour')}
+      ${tile2('live', '📈', AR() ? 'الأسواق مباشر' : 'Markets live', AR() ? 'كل الأسعار والأخبار' : 'every price & headline')}
+      ${tile2('learn', '🎓', AR() ? 'اتعلم' : 'Learn', `${S.lessonsDone.size}/${ls.length} ${AR() ? 'دروس' : 'lessons'}`)}
+      ${tile2('brief', '📰', AR() ? 'الموجز اليومي' : 'Daily brief', AR() ? 'بالعربي في دقيقتين' : 'in Arabic, 2 min')}</div>`;
+  }
+  function headlineNow() {
+    const D = S.D, h = { ...(D.headline || {}) }, X = S.L && S.L.fx_story;
+    if (X && Math.abs(X.move_pct) >= 2) {
+      const pct = nf(Math.abs(X.move_pct), 1), [, vt] = verdict(D.ppi.value);
+      const ppi = D.ppi.value == null ? '' : ` (${D.ppi.value > 0 ? '+' : ''}${nf(D.ppi.value, 0)})`;
+      if (X.direction === 'up') {
+        h.en = `The pound is slipping — the dollar is up ${pct}% in ${X.days} days.`;
+        h.ar = `الجنيه بيتراجع، والدولار زاد ${pct}% في ${X.days} يوم.`;
+      } else {
+        h.en = `The pound is recovering — the dollar is down ${pct}% in ${X.days} days.`;
+        h.ar = `الجنيه بيتحسن، والدولار نزل ${pct}% في ${X.days} يوم.`;
+      }
+      h.good_en = `The overall pressure score is still "${verdict(D.ppi.value)[1]}"${ppi}. ` + (h.good_en || '');
+      h.good_ar = `ومؤشر الضغط الكلي لسه "${vt}"${ppi}. ` + (h.good_ar || '');
+      if (AR()) h.good_en = h.good_ar;
+    }
+    return h;
+  }
+  function viewHome() {
+    const D = S.D, h = headlineNow();
+    return `<div class="view simple home2">
+      ${dollarHero()}
+      ${whyCard()}
+      <section class="card verdict2"><div class="v2-text"><div class="eyebrow">${esc(t('ppi'))}</div>
+        <h1 class="h2-sent">${esc(AR() ? h.ar : h.en)}</h1>
+        ${(AR() ? h.good_ar : h.good_en) ? `<p class="h2-good">${esc(AR() ? h.good_ar : h.good_en)}</p>` : ''}</div>${gauge(D.ppi.value)}</section>
+      <section class="card"><h3>${esc(AR() ? '3 حاجات لازم تعرفها النهارده' : '3 things to know today')}<a class="small" href="#/chain">${esc(AR() ? 'السلسلة كلها ←' : 'Full chain →')}</a></h3>
+        <div class="t3s">${topThree()}</div></section>
+      ${exploreTiles()}
+      <p class="disclaimer">${esc(t('disclaimer'))}</p></div>`;
+  }
+  function viewChain() {
+    return `<div class="view simple"><div class="page-head"><div><h1>${esc(t('chain_title'))}</h1><p>${esc(t('chain_hint'))}</p></div></div>${chainMap()}</div>`;
+  }
+  function viewLearn() {
+    return `<div class="view simple"><div class="page-head"><div><h1>${esc(t('lessons_title'))}</h1><p>${esc(t('lessons_hint'))}</p></div></div>${lessonsRow(true)}</div>`;
+  }
+
+  // ================================================================== SIMPLE: MARKETS (Apple-Stocks-style watchlist)
+  function watchRow(q) {
+    const dir = Math.sign(q.chg || 0) * (q.sign || 0);
+    const cls = dir > 0 ? 'p' : dir < 0 ? 'r' : 'n';
+    const sid = LIVE_SERIES[q.id];
+    return `<button class="wr" ${sid ? `data-series="${sid}"` : ''}><span class="wr-n"><b>${esc(AR() ? q.name_ar : q.name_en)}</b>
+      <span class="tiny muted">${q.open ? `<i class="live-dot"></i>${esc(timeOnly(q.ts))}` : esc(t('closed_mkt')) + ' · ' + esc(fmtDate(q.ts.slice(0, 10)))}</span></span>
+      ${sparkSvg(q.spark, 'wr-sp')}<span class="wr-v num">${nf(q.price, q.digits)}</span>
+      <span class="wr-c ${cls} num">${q.chg_pct == null ? '—' : (q.chg_pct > 0 ? '+' : '') + nf(q.chg_pct, 2) + '%'}</span></button>`;
+  }
+  function viewLiveSimple() {
+    const L = S.L, m = midNow(), F = liveFx();
+    if (!L) return `<div class="view simple"><p class="muted">…</p></div>`;
+    const groups = [[AR() ? 'مصر' : 'Egypt', ['usd_egp', 'egx30', 'cib', 'cib_gdr']], [AR() ? 'السلع' : 'Commodities', ['brent', 'gold', 'wheat', 'gas_eu']],
+      [AR() ? 'مزاج العالم' : 'World mood', ['dxy', 'vix', 'us10y', 'em_eq']]];
+    const lists = groups.map(([g, ids]) => { const rows = ids.map((id) => L.quotes.find((q) => q.id === id)).filter(Boolean).map(watchRow).join('');
+      return rows ? `<h2 class="sec">${esc(g)}</h2><div class="card wl">${rows}</div>` : ''; }).join('');
+    const rate = (label, v, k, sub) => v ? `<div class="rt"><span>${esc(label)}</span><b class="num"${k ? ` data-mid="${k}"` : ''}>${nf(v, v > 1000 ? 0 : 2)}</b>${sub ? `<em>${sub}</em>` : ''}</div>` : '';
+    const rates = `<div class="rates">
+      ${rate(AR() ? 'دولار لحظي' : 'USD live', m && m.usd, 'usd', 'Coinbase')}
+      ${rate(AR() ? 'البنك المركزي شراء' : 'CBE buy', L.cbe && L.cbe.buy, '', esc(L.cbe ? fmtDate(L.cbe.date) : ''))}
+      ${rate(AR() ? 'البنك المركزي بيع' : 'CBE sell', L.cbe && L.cbe.sell, '', 'CBE')}
+      ${rate(AR() ? 'دولار الدهب' : 'Gold-implied', F.gold, '', 'banklive')}
+      ${rate(AR() ? 'يورو' : 'EUR', m && m.eur, 'eur', '')}${rate(AR() ? 'استرليني' : 'GBP', m && m.gbp, 'gbp', '')}
+      ${rate(AR() ? 'ريال سعودي' : 'SAR', m && m.sar, 'sar', '')}${rate(AR() ? 'درهم إماراتي' : 'AED', m && m.aed, 'aed', '')}
+      ${L.gold_eg ? rate(AR() ? 'جرام 21' : 'Gold 21K / g', L.gold_eg.k21, '', 'banklive') : ''}</div>`;
+    const reads = (L.insights || []).map((i) => `<div class="sig ${i.dir > 0 ? 'p' : i.dir < 0 ? 'r' : 'n'}" dir="auto"><p>${AR() ? bidi(esc(i.ar)) : esc(i.en)}</p>
+      <div class="tiny muted">${(i.sources || []).map((x) => `<a href="${esc(x.url)}" target="_blank" rel="noopener"><bdi>${esc(x.name)}</bdi></a>`).join(' · ')}</div></div>`).join('');
+    const news = (L.news || []).slice(0, 8).map((n) => `<li><a dir="auto" href="${esc(n.url)}" target="_blank" rel="noopener">${esc(n.title)}</a><span class="tiny muted">${esc(n.outlet)} · ${esc(ago(n.at))}</span></li>`).join('');
+    return `<div class="view simple">
+      <div class="page-head"><div><h1>${esc(AR() ? 'الأسواق مباشر' : 'Markets live')}</h1><p>${esc(AR() ? 'دوس على أي سطر عشان تشوف التاريخ والشرح.' : 'Tap any row for its history and what it means.')}</p></div></div>
+      <h2 class="sec">${esc(AR() ? 'الجنيه النهارده (جنيه لكل وحدة)' : 'The pound today (EGP per unit)')}</h2><div class="card">${rates}</div>
+      ${lists}
+      <h2 class="sec">${esc(t('live_reads'))}</h2><div class="story">${reads}</div>
+      <h2 class="sec">${esc(t('headlines'))}</h2><div class="card"><ul class="news">${news}</ul></div>
+      ${freshness()}</div>`;
+  }
+  function freshness() {
+    const row = (what, how) => `<tr><td>${esc(what)}</td><td>${esc(how)}</td></tr>`;
+    const A = AR();
+    return `<h2 class="sec">${esc(A ? 'الأرقام بتتحدث كل قد إيه؟' : 'How live is each number?')}</h2><div class="card tblwrap"><table class="tbl fresh">
+      ${row(A ? 'الدولار والعملات (سعر السوق)' : 'Dollar & currencies (mid-market)', A ? 'كل 30 ثانية في المتصفح' : 'every 30 seconds, in your browser')}
+      ${row(A ? 'البورصة والبترول والدهب العالمي' : 'EGX30, oil, world gold, global markets', A ? 'كل 5 دقايق (البورصات بتنشر متأخر 15 دقيقة)' : 'every ~5 minutes (exchanges delay quotes ~15 min)')}
+      ${row(A ? 'سعر الدهب في مصر والبنك المركزي' : 'Egypt gold price, CBE rate', A ? 'كل 5 دقايق' : 'checked every ~5 minutes')}
+      ${row(A ? 'الأخبار' : 'Headlines', A ? 'كل 5 دقايق' : 'every ~5 minutes')}
+      ${row(A ? 'التضخم والاحتياطي والتحويلات' : 'Inflation, reserves, remittances', A ? 'أول ما الجهة الرسمية تنشر (شهري)' : 'as soon as the official source publishes (monthly)')}</table></div>`;
+  }
+
+  // ================================================================== WHY IS THE DOLLAR MOVING? (explainer, from live.js fx_story)
+  const STRENGTH = { strong: ['p', 'Main reason', 'سبب رئيسي'], some: ['w', 'Adds pressure', 'بيزود الضغط'], none: ['n', 'Ruled out', 'مش السبب'] };
+  function whyCard() {
+    const X = S.L && S.L.fx_story;
+    if (!X) return '';
+    const main = X.why.filter((w) => w.strength !== 'none').slice(0, 3);
+    const cls = X.direction === 'up' ? 'p' : X.direction === 'down' ? 'r' : 'n';
+    return `<a class="card whycard why-${cls}" href="#/why">
+      <div class="wc-top"><span class="wc-ic">${X.direction === 'up' ? '📈' : X.direction === 'down' ? '📉' : '➖'}</span>
+        <div><b>${esc(L2(X.title))}</b><p>${AR() ? bidi(esc(L2(X.summary))) : esc(L2(X.summary))}</p></div></div>
+      ${main.length ? `<div class="wc-chips">${main.map((w) => `<span class="wc-chip s-${STRENGTH[w.strength][0]}">${w.icon} ${esc(L2(w.title))}</span>`).join('')}</div>` : ''}
+      <span class="wc-go">${esc(AR() ? 'افهم السبب وإيه اللي جاي ←' : 'Why, and what happens next →')}</span></a>`;
+  }
+  function viewWhy() {
+    const X = S.L && S.L.fx_story;
+    if (!X) return `<div class="view simple"><p class="muted">${esc(t('no_data'))}</p></div>`;
+    const A = AR();
+    const src = (arr) => (arr || []).map((x) => `<a href="${esc(x.url)}" target="_blank" rel="noopener"><bdi>${esc(x.name)}</bdi></a>${x.date ? ` <span class="num">${esc(x.date)}</span>` : ''}`).join(' · ');
+    const why = X.why.map((w) => { const [c, en, ar] = STRENGTH[w.strength];
+      return `<article class="wy wy-${c}"><div class="wy-h"><span class="wy-ic">${w.icon}</span><b>${esc(L2(w.title))}</b><span class="wy-b s-${c}">${esc(A ? ar : en)}</span></div>
+        <p>${A ? bidi(esc(L2(w.text))) : esc(L2(w.text))}</p><div class="tiny muted">${src(w.sources)}</div></article>`; }).join('');
+    const cont = (X.if_continues || []).map((c) => `<li>${A ? bidi(esc(L2(c))) : esc(L2(c))}</li>`).join('');
+    const lev = (X.levers || []).map((l) => `<div class="lv"><span class="lv-ic">${l.icon}</span><div><b>${esc(L2(l.title))}</b><p>${esc(L2(l.text))}</p>
+      ${l.now ? `<span class="lv-now">${A ? bidi(esc(L2(l.now))) : esc(L2(l.now))}</span>` : ''}</div></div>`).join('');
+    const pct = X.move_pct;
+    return `<div class="view simple why">
+      <p><a href="#/home">← ${esc(t('home'))}</a></p>
+      <section class="card why-hero why-${X.direction === 'up' ? 'p' : X.direction === 'down' ? 'r' : 'n'}">
+        <div class="eyebrow">${esc(A ? 'الدولار مقابل الجنيه' : 'USD/EGP')}</div>
+        <h1>${esc(L2(X.title))}</h1>
+        <div class="wh-move" dir="ltr"><span class="num">${nf(X.from, 2)}</span><small>${esc(X.from_date)}</small><span class="wh-arrow">→</span>
+          <span class="num">${nf(X.to, 2)}</span><small>${esc(X.to_date)}</small><b class="num">${pct > 0 ? '+' : ''}${nf(pct, 1)}%</b></div>
+        <p>${A ? bidi(esc(L2(X.summary))) : esc(L2(X.summary))}</p>
+        <div class="tiny muted">${src(X.sources)}${X.mid ? ` · ${esc(A ? 'السوق لحظي' : 'mid-market now')} <span class="num">${nf(X.mid, 2)}</span> (Coinbase)` : ''}</div></section>
+      <h2 class="sec">${esc(A ? '1. ليه بيحصل كده؟' : '1. Why is this happening?')}</h2><div class="wys">${why}</div>
+      ${cont ? `<h2 class="sec">${esc(A ? '2. لو فضل يزيد، إيه اللي هيحصل؟' : '2. If it keeps rising, what happens?')}</h2><section class="card"><ul class="changes cont">${cont}</ul></section>` : ''}
+      <h2 class="sec">${esc(A ? (cont ? '3. إيه اللي ممكن يوقفه؟' : '2. إيه اللي ممكن يغيّر الاتجاه؟') : (cont ? '3. What could slow it down?' : '2. What could change the direction?'))}</h2>
+      <p class="small muted">${esc(A ? 'دي الأدوات اللي البنك المركزي والحكومة بيستخدموها عادة، ومعاها الوضع النهارده.' : 'The tools the Central Bank and government usually use, with where each stands today.')}</p>
+      <div class="lvs">${lev}</div>
+      <p class="disclaimer">${esc(L2(X.note))}</p></div>`;
+  }
+
   // ------------------------------------------------------------------ views
   function viewOverview() {
     const D = S.D;
@@ -699,7 +1044,7 @@
     const story = fired.slice(0, 4).map((r) => sigCard(r, true)).join('') || `<p class="muted">${esc(t('nothing_fired'))}</p>`;
     const cal = D.calendar.filter((c) => c.status !== 'done').slice(0, 5).map(calItem).join('');
     const evs = D.events.slice(0, 5).map(evItem).join('') || `<p class="muted">${esc(t('no_events'))}</p>`;
-    return `<div class="view">
+    return `<div class="view">${whyCard()}
       <div id="liveSlot">${liveSection()}</div>
       <div class="grid g-hero" style="margin-top:12px">
         <section class="card hero ${p.sufficient ? '' : 'insufficient'}">
@@ -928,33 +1273,17 @@
     return [['overview', '◉', t('overview')], ...S.D.domains.map((d) => ['d/' + d.id, DOMAIN_ICON[d.id], AR() ? d.name_ar : d.name_en]),
       ['signals', 'ϟ', t('signals')], ['calendar', '▦', t('calendar')], ['brief', 'ع', t('brief')], ['data', '≡', t('data')]];
   }
-  function priceBar() {
-    const el = $('#pricebar');
-    if (!el || !S.D) return;
-    const L = S.L;
-    const items = [];
-    const F = liveFx();
-    if (F.cbe) items.push([AR() ? 'دولار البنك المركزي' : '$ CBE', nf(F.cbe, 2), null]);
-    if (F.market) items.push([AR() ? 'دولار السوق' : '$ market', nf(F.market.price, 2), F.market.chg_pct, F.market.sign]);
-    if (F.gold) items.push([AR() ? 'دولار الدهب' : '$ via gold', nf(F.gold, 2), null]);
-    for (const [id, lab, labAr, d] of [['brent', 'Oil', 'بترول', 1], ['egx30', 'EGX30', 'البورصة', 0], ['gold', 'Gold $/oz', 'دهب عالمي', 0]]) {
-      const q = L ? L.quotes.find((x) => x.id === id) : null;
-      if (q) items.push([AR() ? labAr : lab, (id === 'brent' ? '$' : '') + nf(q.price, id === 'egx30' || id === 'gold' ? 0 : 1), q.chg_pct, q.sign]);
-    }
-    el.innerHTML = items.map(([l, v, c, sg]) => {
-      const cls = c == null ? '' : (Math.sign(c) * (sg || 0) > 0 ? 'p' : Math.sign(c) * (sg || 0) < 0 ? 'r' : '');
-      return `<span class="pb"><span>${esc(l)}</span><b class="num">${v}</b>${c == null ? '' : `<i class="num ${cls}">${c > 0 ? '+' : ''}${nf(c, 1)}%</i>`}</span>`;
-    }).join('') + `<span class="pb pb-time"><i>● ${esc(AR() ? 'اتحدّث' : 'updated')} ${esc(ago(L ? L.generated : S.D.generated))}</i></span>`;
-  }
+  function priceBar() { ticker(); }
   function renderNav() {
     document.documentElement.dataset.ui = S.mode;
     priceBar();
     $$('[data-mode-btn]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.modeBtn === S.mode)));
     $('#explainBtn').hidden = S.mode === 'simple';
     if (S.mode === 'simple') {
-      const items = [['home', '◉', t('home')], ['learn', '✎', t('learn_tab')], ['live', '●', t('live_tab')], ['brief', 'ع', t('brief')]];
+      const items = [['home', '◉', t('home')], ['live', '↗', AR() ? 'الأسواق' : 'Markets'], ['chain', '⛓', AR() ? 'السلسلة' : 'Chain'],
+        ['learn', '✎', t('learn_tab')], ['brief', 'ع', AR() ? 'الموجز' : 'Brief']];
       $('#tabs').innerHTML = items.map(([r, ic, l]) => `<button class="tab" type="button" data-route="${r}" ${S.route === r || (r === 'learn' && S.route.startsWith('learn')) ? 'aria-current="page"' : ''}><span aria-hidden="true">${ic}</span>${esc(l)}</button>`).join('');
-      $('#bottombar').innerHTML = [...items, ['__search', '⌕', t('search')]].map(([r, ic, l]) => `<button type="button" data-route="${r}" ${S.route === r ? 'aria-current="page"' : ''}><span aria-hidden="true">${ic}</span><span>${esc(l)}</span></button>`).join('');
+      $('#bottombar').innerHTML = items.map(([r, ic, l]) => `<button type="button" data-route="${r}" ${S.route === r || (r === 'learn' && S.route.startsWith('learn')) ? 'aria-current="page"' : ''}><span aria-hidden="true">${ic}</span><span>${esc(l)}</span></button>`).join('');
       return;
     }
     const fired = S.D.rules.filter((r) => r.fired && r.direction > 0).length;
@@ -981,6 +1310,8 @@
     else if (r === 'learn') html = viewLearn();
     else if (r.startsWith('learn/')) html = viewLesson(r.slice(6));
     else if (r === 'live') html = viewLiveSimple();
+    else if (r === 'chain') html = viewChain();
+    else if (r === 'why') html = viewWhy();
     else if (r === 'overview') html = viewOverview();
     else if (r.startsWith('d/')) html = viewDomain(r.slice(2));
     else if (r === 'signals') html = viewSignals();
@@ -991,7 +1322,7 @@
     $('#main').innerHTML = html;
     renderNav();
     applyI18nStatic();
-    requestAnimationFrame(() => { drawAllCharts(); if (r === 'data') drawPpiHistory(); });
+    requestAnimationFrame(() => { drawAllCharts(); if (r === 'data') drawPpiHistory(); if (r === 'home') drawDollar(); });
     if (keepScroll) window.scrollTo(0, y); else window.scrollTo(0, 0);
     const df = $('#dataFilter');
     if (df) df.addEventListener('input', () => { S.dataFilter = df.value; const pos = df.selectionStart; render(true); const n = $('#dataFilter'); n.focus(); n.setSelectionRange(pos, pos); });
@@ -1131,6 +1462,9 @@
   // ------------------------------------------------------------------ events
   function bind() {
     document.addEventListener('click', (e) => {
+      const dr = e.target.closest('[data-drange]');
+      if (dr) { S.dRange = dr.dataset.drange; store('pulse.drange', S.dRange); $$('[data-drange]').forEach((b) => b.setAttribute('aria-pressed', String(b === dr))); drawDollar(); return; }
+      if (e.target.closest('#pricebar')) { $('#pricebar').classList.toggle('paused'); return; }
       const mb = e.target.closest('[data-more]');
       if (mb) { const c = mb.closest('.live-card'); if (c) c.classList.add('expanded'); return; }
       const nEl = e.target.closest('[data-node]');
@@ -1194,10 +1528,13 @@
     updateLive();
     await pollLive(false);
     { const el = $('#liveSlot'); if (el) el.innerHTML = liveSection(); }
+    pollMid();
+    setInterval(pollMid, 30 * 1000);
+    setInterval(() => { const a = $('#dollarAgo'), m = midNow(); if (a && m) a.textContent = secsAgo(m.at); }, 5000);
     setInterval(poll, 60 * 1000);
     setInterval(() => pollLive(true), 60 * 1000);
     setInterval(updateLive, 30 * 1000);
-    document.addEventListener('visibilitychange', () => { if (!document.hidden) { poll(); pollLive(true); } });
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) { poll(); pollLive(true); pollMid(); } });
     window.addEventListener('load', () => drawAllCharts());
   }
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {

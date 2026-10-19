@@ -1,4 +1,4 @@
-"""Live layer: intraday market quotes + live insights, refreshed every ~15 minutes (GitHub Actions).
+"""Live layer: intraday market quotes + live insights, refreshed every ~5 minutes (GitHub Actions).
 
 Writes site/data/live.js. It never writes to the observations table: intraday quotes are delayed market
 prices (quality 'unofficial'), kept apart from the official daily record. Every quote and insight carries
@@ -242,6 +242,29 @@ def insights(quotes: list[dict], gold: dict | None, cbe: dict | None, v: DataVie
     return out
 
 
+MID_URL = "https://api.coinbase.com/v2/exchange-rates?currency=USD"
+
+
+def fetch_mid() -> dict | None:
+    """Mid-market FX from Coinbase's public rates API (keyless; the same kind of rate Google shows). Unofficial."""
+    import requests
+
+    try:
+        r = requests.get(MID_URL, timeout=20)
+        r.raise_for_status()
+        rates = r.json()["data"]["rates"]
+        egp = float(rates["EGP"])
+    except Exception as e:  # noqa: BLE001
+        log.warning("mid-market rates failed: %s", e)
+        return None
+    out = {"usd_egp": round(egp, 4), "ts": now_cairo().isoformat(timespec="minutes"),
+           "source": "Coinbase public rates (mid-market, unofficial)", "url": "https://www.coinbase.com/converter/usd/egp"}
+    for c in ("EUR", "GBP", "SAR", "AED", "KWD"):
+        if rates.get(c):
+            out[f"{c.lower()}_egp"] = round(egp / float(rates[c]), 4)
+    return out
+
+
 def load_prev(src: str | None) -> dict:
     if not src:
         return {}
@@ -265,7 +288,14 @@ def build_live(conn, prev_src: str | None = None) -> dict:
     gold = fetch_gold_eg()
     cbe = fetch_cbe_fx()
     news = fetch_news()
+    mid = fetch_mid()
     ins = insights(quotes, gold, cbe, v)
+    try:
+        from .fxstory import build_fx_story
+        story = build_fx_story(v, quotes, cbe, mid, news)
+    except Exception as e:  # noqa: BLE001 — the explainer must never break the live feed
+        log.warning("fx story failed: %s", e)
+        story = None
     now = now_cairo()
     # rolling intraday history of the key live reads (kept across runs via the previously published file)
     prev = load_prev(prev_src)
@@ -273,16 +303,17 @@ def build_live(conn, prev_src: str | None = None) -> dict:
     cutoff = (now - timedelta(days=3)).isoformat(timespec="minutes")
     stamp = now.isoformat(timespec="minutes")
     for key, val in (("gold_implied", gold_implied_fx(gold["k21"], gold["xau"]) if gold else None),
-                     ("gold_21k", gold["k21"] if gold else None)):
+                     ("gold_21k", gold["k21"] if gold else None),
+                     ("usd_mid", mid["usd_egp"] if mid else None)):
         if val is None:
             continue
         pts = [p for p in hist.get(key, []) if p[0] >= cutoff]
         if not pts or pts[-1][1] != round(val, 4):
             pts.append([stamp, round(val, 4)])
-        hist[key] = pts[-300:]
+        hist[key] = pts[-900:]
     return {"generated": now.isoformat(timespec="seconds"), "quotes": quotes, "gold_eg": gold, "cbe": cbe,
-            "insights": ins, "news": news, "hist": hist,
-            "note": "Intraday prices are delayed market quotes (unofficial) refreshed about every 15 minutes; "
+            "insights": ins, "news": news, "hist": hist, "mid": mid, "fx_story": story,
+            "note": "Intraday prices are delayed market quotes (unofficial) refreshed about every 5 minutes; "
                     "official figures update when the source publishes."}
 
 
