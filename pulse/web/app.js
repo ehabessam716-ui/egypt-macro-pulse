@@ -114,6 +114,8 @@
   const $ = (s, el = document) => el.querySelector(s);
   const $$ = (s, el = document) => [...el.querySelectorAll(s)];
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  // only http(s) links from feeds/data are ever rendered as links (blocks javascript:/data: URLs)
+  const safeUrl = (u) => (/^https?:\/\//i.test(String(u || '')) ? esc(u) : '#');
   const nm = (o) => (AR() ? o.name_ar || o.name_en : o.name_en);
   // keep numbers/dates left-to-right inside Arabic sentences
   const bidi = (escaped) => escaped.replace(/([+\-−]?\d[\d,]*(?:\.\d+)?(?:[-:/]\d+)*%?)/g, '<span class="num">$1</span>');
@@ -255,13 +257,13 @@
       const r = S.D.series[m.id]; const dir = Math.sign(m.change) * (m.sign || 0);
       const cls = dir > 0 ? 'p' : dir < 0 ? 'r' : 'n';
       return `<li><a href="#/s/${m.id}" data-series="${m.id}">${esc(r ? nm(r) : m.id)}</a> <span class="t-chg ${cls}" style="display:inline-flex"><span class="num">${esc(fmtChange(m.change, m.change_pct, m.pp, m.unit))}</span></span>
-        <span class="tiny muted num">${esc(fmtDate(m.from))} → ${esc(fmtDate(m.to))}</span>${m.url ? ` <a class="tiny" href="${esc(m.url)}" target="_blank" rel="noopener">${esc(t('source'))} ↗</a>` : ''}</li>`;
+        <span class="tiny muted num">${esc(fmtDate(m.from))} → ${esc(fmtDate(m.to))}</span>${m.url ? ` <a class="tiny" href="${safeUrl(m.url)}" target="_blank" rel="noopener">${esc(t('source'))} ↗</a>` : ''}</li>`;
     }).join('');
     const sigs = S.D.rules.filter((r) => r.fired && (r.inputs || []).some((i) => i.series === s.id))
       .map((r) => `<li><b>${esc(r.id)}</b> — ${AR() ? bidi(esc(r.ar || r.en)) : esc(r.en)}</li>`).join('');
     const evd = EV_DOMAIN[s.domain];
     const evs = S.D.events.filter((e) => e.domain === evd && e.direction !== 0).slice(0, 3)
-      .map((e) => `<li><span class="num">${esc(fmtDate(e.event_date))}</span> — ${esc(AR() ? e.title_ar || e.title_en : e.title_en)} <a class="tiny" href="${esc(e.source_url)}" target="_blank" rel="noopener">↗</a></li>`).join('');
+      .map((e) => `<li><span class="num">${esc(fmtDate(e.event_date))}</span> — ${esc(AR() ? e.title_ar || e.title_en : e.title_en)} <a class="tiny" href="${safeUrl(e.source_url)}" target="_blank" rel="noopener">↗</a></li>`).join('');
     const ch = impactDir(s, w && w.change != null ? w.change : s.change);
     const up = `<b>${esc(t('if_rises'))}:</b> ${esc(exTxt(ex.up))}`, down = `<b>${esc(t('if_falls'))}:</b> ${esc(exTxt(ex.down))}`;
     const lead = ch > 0 ? `<p>${up}</p><p class="small muted">${down}</p>` : ch < 0 ? `<p>${down}</p><p class="small muted">${up}</p>` : `<p>${up}</p><p>${down}</p>`;
@@ -341,7 +343,7 @@
         const v = typeof i.value === 'number' ? nf(i.value, digitsFor(i.value, s && s.unit)) : i.value;
         return `<li><a href="#/s/${i.series}" data-series="${i.series}">${esc(label)}</a> = <span class="num">${esc(v)}</span> · ${esc(i.source || '')} · <span class="num">${esc(i.obs_date || '')}</span></li>`;
       }
-      return `<li>${esc(i.event || i.calendar || '')} · <span class="num">${esc(i.date || '')}</span>${i.url ? ` · <a href="${esc(i.url)}" target="_blank" rel="noopener">↗</a>` : ''}</li>`;
+      return `<li>${esc(i.event || i.calendar || '')} · <span class="num">${esc(i.date || '')}</span>${i.url ? ` · <a href="${safeUrl(i.url)}" target="_blank" rel="noopener">↗</a>` : ''}</li>`;
     }).join('');
     const body = r.evaluable
       ? `<p>${AR() ? bidi(esc(text || '')) : esc(text || '')}</p>`
@@ -473,15 +475,15 @@
     const ins = compact ? [...L.insights].sort((a, b) => IMPORTANT.indexOf(a.id) - IMPORTANT.indexOf(b.id)).slice(0, 3) : L.insights;
     const reads = ins.map((i) => {
       const cls = i.dir > 0 ? 'p' : i.dir < 0 ? 'r' : 'n';
-      const src = (i.sources || []).map((x) => `<a href="${esc(x.url)}" target="_blank" rel="noopener"><bdi>${esc(x.name)}</bdi></a>${x.at ? ` <span class="num">${esc(timeOnly(x.at))}</span>` : ''}`).join(' · ');
+      const src = (i.sources || []).map((x) => `<a href="${safeUrl(x.url)}" target="_blank" rel="noopener"><bdi>${esc(x.name)}</bdi></a>${x.at ? ` <span class="num">${esc(timeOnly(x.at))}</span>` : ''}`).join(' · ');
       return `<div class="sig ${cls}"><p>${AR() ? bidi(esc(i.ar)) : esc(i.en)}</p><div class="tiny muted" style="margin-top:4px">${src}</div></div>`;
     }).join('');
-    const news = (L.news || []).slice(0, compact ? 3 : 6).map((n) => `<li><a dir="auto" href="${esc(n.url)}" target="_blank" rel="noopener">${esc(n.title)}</a>
+    const news = (L.news || []).slice(0, compact ? 3 : 6).map((n) => `<li><a dir="auto" href="${safeUrl(n.url)}" target="_blank" rel="noopener">${esc(n.title)}</a>
       <span class="tiny muted">${esc(n.outlet)} · ${esc(ago(n.at))}</span></li>`).join('');
     const cbe = L.cbe ? `<div class="mini"><span class="muted small">${esc(t('cbe_today'))}</span><b class="num">${nf(L.cbe.buy, 4)}</b>
-      <span class="tiny muted">${esc(fmtDate(L.cbe.date))} · <a href="${esc(L.cbe.url)}" target="_blank" rel="noopener">CBE ↗</a></span></div>` : '';
+      <span class="tiny muted">${esc(fmtDate(L.cbe.date))} · <a href="${safeUrl(L.cbe.url)}" target="_blank" rel="noopener">CBE ↗</a></span></div>` : '';
     const gold = L.gold_eg ? `<div class="mini"><span class="muted small">${esc(t('gold21_now'))}</span><b class="num">${nf(L.gold_eg.k21, 0)} EGP</b>
-      <span class="tiny muted"><span class="num">${esc(timeOnly(L.gold_eg.ts))}</span> · <a href="${esc(L.gold_eg.url)}" target="_blank" rel="noopener">banklive ↗</a></span></div>` : '';
+      <span class="tiny muted"><span class="num">${esc(timeOnly(L.gold_eg.ts))}</span> · <a href="${safeUrl(L.gold_eg.url)}" target="_blank" rel="noopener">banklive ↗</a></span></div>` : '';
     return `<section class="card live-card"><h3><span><span class="live-dot"></span>${esc(t('right_now'))}</span>
         <span class="tiny muted">${esc(t('prices_updated'))} ${esc(ago(L.generated))} · <span class="num">${esc(timeOnly(L.generated))}</span> Cairo</span></h3>
       <div class="lq-row">${chips}</div>
@@ -519,6 +521,10 @@
   const L2 = (pair) => (pair ? (AR() ? pair[1] || pair[0] : pair[0]) : '');
   // the pound box follows the live CBE rate (updated every ~15 min) instead of the morning build
   function liveNode(n) {
+    if (n && n.id === 'hot' && S.L && S.L.fx_story) {           // hot money follows the 5-minute live assessment
+      const h = S.L.fx_story.why.find((w) => w.id === 'hot_money');
+      if (h) return { ...n, status: h.strength === 'strong' ? 1 : n.status };
+    }
     if (!n || n.id !== 'pound' || !S.L || !S.L.cbe) return n;
     const v = S.L.cbe.buy;
     return { ...n, value: [`${nf(v, 2)} per $`, `${nf(v, 2)} جنيه للدولار`] };
@@ -597,7 +603,7 @@
     const out = C.edges.filter((e) => e.from === id), inn = C.edges.filter((e) => e.to === id);
     const chip = (nid, label, dir) => { const m = nodeById(nid); if (!m) return ''; const [c2] = stOf(m);
       return `<button class="ch-chip cn-${c2}" data-node="${nid}">${dir === 'out' ? '→' : '←'} ${esc(L2(m.title))} <em>${esc(L2(label))}</em></button>`; };
-    const srcs = (n.sources || []).map((x) => x.url ? `<a href="${esc(x.url)}" target="_blank" rel="noopener"><bdi>${esc(x.name)}</bdi></a> <span class="num">${esc(x.date || '')}</span>` : esc(x.name)).join(' · ');
+    const srcs = (n.sources || []).map((x) => x.url ? `<a href="${safeUrl(x.url)}" target="_blank" rel="noopener"><bdi>${esc(x.name)}</bdi></a> <span class="num">${esc(x.date || '')}</span>` : esc(x.name)).join(' · ');
     const nums = (n.series || []).filter((sid) => S.D.series[sid]).map((sid) => { const sr = S.D.series[sid];
       return `<button class="mini-tile" data-series="${sid}"><span>${esc(nm(sr))}</span><b class="num">${sr.empty ? '—' : valueHtml(sr)}</b></button>`; }).join('');
     let tourBar = '';
@@ -967,8 +973,8 @@
       ${rate(AR() ? 'ريال سعودي' : 'SAR', m && m.sar, 'sar', '')}${rate(AR() ? 'درهم إماراتي' : 'AED', m && m.aed, 'aed', '')}
       ${L.gold_eg ? rate(AR() ? 'جرام 21' : 'Gold 21K / g', L.gold_eg.k21, '', 'banklive') : ''}</div>`;
     const reads = (L.insights || []).map((i) => `<div class="sig ${i.dir > 0 ? 'p' : i.dir < 0 ? 'r' : 'n'}" dir="auto"><p>${AR() ? bidi(esc(i.ar)) : esc(i.en)}</p>
-      <div class="tiny muted">${(i.sources || []).map((x) => `<a href="${esc(x.url)}" target="_blank" rel="noopener"><bdi>${esc(x.name)}</bdi></a>`).join(' · ')}</div></div>`).join('');
-    const news = (L.news || []).slice(0, 8).map((n) => `<li><a dir="auto" href="${esc(n.url)}" target="_blank" rel="noopener">${esc(n.title)}</a><span class="tiny muted">${esc(n.outlet)} · ${esc(ago(n.at))}</span></li>`).join('');
+      <div class="tiny muted">${(i.sources || []).map((x) => `<a href="${safeUrl(x.url)}" target="_blank" rel="noopener"><bdi>${esc(x.name)}</bdi></a>`).join(' · ')}</div></div>`).join('');
+    const news = (L.news || []).slice(0, 8).map((n) => `<li><a dir="auto" href="${safeUrl(n.url)}" target="_blank" rel="noopener">${esc(n.title)}</a><span class="tiny muted">${esc(n.outlet)} · ${esc(ago(n.at))}</span></li>`).join('');
     return `<div class="view simple">
       <div class="page-head"><div><h1>${esc(AR() ? 'الأسواق مباشر' : 'Markets live')}</h1><p>${esc(AR() ? 'دوس على أي سطر عشان تشوف التاريخ والشرح.' : 'Tap any row for its history and what it means.')}</p></div></div>
       <h2 class="sec">${esc(AR() ? 'الجنيه النهارده (جنيه لكل وحدة)' : 'The pound today (EGP per unit)')}</h2><div class="card">${rates}</div>
@@ -1005,7 +1011,7 @@
     const X = S.L && S.L.fx_story;
     if (!X) return `<div class="view simple"><p class="muted">${esc(t('no_data'))}</p></div>`;
     const A = AR();
-    const src = (arr) => (arr || []).map((x) => `<a href="${esc(x.url)}" target="_blank" rel="noopener"><bdi>${esc(x.name)}</bdi></a>${x.date ? ` <span class="num">${esc(x.date)}</span>` : ''}`).join(' · ');
+    const src = (arr) => (arr || []).map((x) => `<a href="${safeUrl(x.url)}" target="_blank" rel="noopener"><bdi>${esc(x.name)}</bdi></a>${x.date ? ` <span class="num">${esc(x.date)}</span>` : ''}`).join(' · ');
     const why = X.why.map((w) => { const [c, en, ar] = STRENGTH[w.strength];
       return `<article class="wy wy-${c}"><div class="wy-h"><span class="wy-ic">${w.icon}</span><b>${esc(L2(w.title))}</b><span class="wy-b s-${c}">${esc(A ? ar : en)}</span></div>
         <p>${A ? bidi(esc(L2(w.text))) : esc(L2(w.text))}</p><div class="tiny muted">${src(w.sources)}</div></article>`; }).join('');
@@ -1085,7 +1091,7 @@
       f === 'relief' ? r.fired && r.direction < 0 : f === 'notes' ? r.fired && r.direction === 0 : f === 'ne' ? !r.evaluable : true);
     const counts = { fired: S.D.rules.filter((r) => r.fired).length, ne: S.D.rules.filter((r) => !r.evaluable).length, all: S.D.rules.length };
     const chip = (k, label, n) => `<button class="chip" data-sig="${k}" aria-pressed="${f === k}">${esc(label)}${n != null ? ` · ${n}` : ''}</button>`;
-    const q = S.D.queue.map((e) => `<div class="ev"><div class="d num">${esc(e.event_date)}</div><div class="t"><a dir="auto" href="${esc(e.source_url)}" target="_blank" rel="noopener">${esc(e.title_en)}</a>
+    const q = S.D.queue.map((e) => `<div class="ev"><div class="d num">${esc(e.event_date)}</div><div class="t"><a dir="auto" href="${safeUrl(e.source_url)}" target="_blank" rel="noopener">${esc(e.title_en)}</a>
       <small>${esc(e.event_type)} · ${esc(e.source_name)}</small></div><span class="pill">${e.n_outlets} ${AR() ? 'مصدر' : 'outlet' + (e.n_outlets === 1 ? '' : 's')}</span></div>`).join('');
     return `<div class="view"><div class="page-head"><div><h1>${esc(t('signals'))}</h1><p>${esc(t('tool_default'))}</p></div></div>
       <div class="chips">${chip('fired', t('fired'), counts.fired)}${chip('pressure', t('pressure_word'))}${chip('relief', t('relief_word'))}${chip('notes', t('notes'))}${chip('ne', t('not_evaluable'), counts.ne)}${chip('all', t('all'), counts.all)}</div>
@@ -1097,7 +1103,7 @@
   function evItem(e) {
     const color = e.direction > 0 ? 'var(--pressure)' : e.direction < 0 ? 'var(--relief)' : 'var(--sand)';
     return `<div class="ev"><div class="d num">${esc(fmtDate(e.event_date))}</div>
-      <div class="t"><span dir="auto">${esc(AR() ? e.title_ar || e.title_en : e.title_en)}</span><small>${esc(e.event_type)} · ${esc(e.confidence)}${e.direction === 0 ? ' · ' + esc(t('tag_only')) : ''} · <a href="${esc(e.source_url)}" target="_blank" rel="noopener">${esc(e.source_name)}</a></small></div>
+      <div class="t"><span dir="auto">${esc(AR() ? e.title_ar || e.title_en : e.title_en)}</span><small>${esc(e.event_type)} · ${esc(e.confidence)}${e.direction === 0 ? ' · ' + esc(t('tag_only')) : ''} · <a href="${safeUrl(e.source_url)}" target="_blank" rel="noopener">${esc(e.source_name)}</a></small></div>
       <div title="${esc(t('weight_left'))} ${Math.round(e.weight_left * 100)}%"><div class="decay"><span style="width:${Math.round(e.weight_left * 100)}%;background:${color}"></span></div>
       <div class="tiny muted num" style="text-align:end">${e.score > 0 ? '+' : ''}${nf(e.score, 2)}</div></div></div>`;
   }
@@ -1107,7 +1113,7 @@
     const today = S.D.as_of;
     const dayLabel = c.event_date === today ? t('today') : fmtDate(c.event_date);
     return `<div class="cal-item"><div class="when">${esc(dayLabel)}<small class="num">${esc(c.event_time_cairo || '')}</small></div>
-      <div><a dir="auto" href="${esc(c.source_url)}" target="_blank" rel="noopener">${esc(c.description)}</a> <span class="pill">${esc(c.status)}</span></div>
+      <div><a dir="auto" href="${safeUrl(c.source_url)}" target="_blank" rel="noopener">${esc(c.description)}</a> <span class="pill">${esc(c.status)}</span></div>
       ${cd ? `<span class="countdown">${esc(cd)}</span>` : '<span></span>'}</div>`;
   }
   function viewCalendar() {
@@ -1128,7 +1134,7 @@
         if (!inTable) { close(); html += '<table>'; inTable = true; } html += '<tr>' + cells.map((c) => `<td>${esc(c)}</td>`).join('') + '</tr>'; continue; }
       if (/^\s*- /.test(l)) { if (!inUl) { close(); html += '<ul>'; inUl = true; } const sub = /^\s{2,}- /.test(l); html += `<li${sub ? ' style="margin-inline-start:18px;list-style:circle"' : ''}>${esc(l.replace(/^\s*- /, ''))}</li>`; continue; }
       const m = l.match(/^(\d+)\. (.*) — (\S+)$/);
-      if (m) { close(); const url = m[3]; html += `<div>${m[1]}. ${url.startsWith('http') ? `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(m[2])}</a>` : esc(m[2] + ' — ' + url)}</div>`; continue; }
+      if (m) { close(); const url = m[3]; html += `<div>${m[1]}. ${url.startsWith('http') ? `<a href="${safeUrl(url)}" target="_blank" rel="noopener">${esc(m[2])}</a>` : esc(m[2] + ' — ' + url)}</div>`; continue; }
       if (l.trim()) { close(); html += `<p>${esc(l)}</p>`; } else close();
     }
     close(); if (inRefs) html += '</div>';
@@ -1147,7 +1153,7 @@
     const rows = Object.values(S.D.series).filter((s) => !f || (s.id + ' ' + s.name_en + ' ' + s.name_ar).toLowerCase().includes(f))
       .map((s) => `<tr><td><a href="#/s/${s.id}" data-series="${s.id}">${esc(nm(s))}</a><div class="tiny muted">${esc(s.id)}</div></td>
         <td class="num">${s.empty ? '—' : valueHtml(s)}</td><td class="num">${esc(s.date || '')}</td><td>${s.empty ? `<span class="pill">${esc(s.access)}</span>` : badges(s)}</td>
-        <td class="small">${s.url ? `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.source)}</a>` : esc(s.source || '')}</td></tr>`).join('');
+        <td class="small">${s.url ? `<a href="${safeUrl(s.url)}" target="_blank" rel="noopener">${esc(s.source)}</a>` : esc(s.source || '')}</td></tr>`).join('');
     const src = S.D.sources.map((s) => `<tr><td>${esc(s.source)}</td><td class="${s.status === 'ok' ? 'status-ok' : 'status-err'}">${s.status === 'ok' ? '● ok' : '● ' + esc(t('error'))}</td>
       <td class="num small">${esc((s.at || '').replace('T', ' ').slice(0, 16))} UTC</td><td class="num">${s.rows ?? ''}</td><td class="small muted">${esc(s.error || '')}</td></tr>`).join('');
     return `<div class="view"><div class="page-head"><div><h1>${esc(t('data'))}</h1></div></div>
@@ -1194,7 +1200,7 @@
       ${explainPanel(s)}
       <div class="card" style="margin-top:12px"><h3>${esc(t('history'))}<span id="dRange"></span></h3><div class="chart" dir="ltr" id="dChart"><div class="muted small">…</div></div></div>
       <div class="facts">
-        <div class="fact"><b>${esc(t('source'))}</b>${s.url ? `<a dir="auto" href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.source)} ↗</a>` : `<bdi>${esc(s.source || s.access)}</bdi>`}</div>
+        <div class="fact"><b>${esc(t('source'))}</b>${s.url ? `<a dir="auto" href="${safeUrl(s.url)}" target="_blank" rel="noopener">${esc(s.source)} ↗</a>` : `<bdi>${esc(s.source || s.access)}</bdi>`}</div>
         <div class="fact"><b>${esc(t('observed'))} / ${esc(t('released'))}</b><span class="num">${esc(s.date || '—')}${s.obs_time ? ' ' + esc(s.obs_time.slice(11, 16)) : ''} / ${esc(s.release || '—')}</span></div>
         <div class="fact"><b>${esc(t('quality'))}</b>${esc(meta(s.quality || '—'))} · ${esc(meta(s.access))}</div>
         <div class="fact"><b>${esc(t('frequency'))} · ${esc(t('unit'))}</b>${esc(meta(s.freq))} · <bdi>${esc(s.unit || '—')}</bdi></div>
@@ -1225,7 +1231,7 @@
       else draw();
       $('#dTable').innerHTML = `<table class="tbl"><tr><th>${esc(t('observed'))}</th><th>value</th><th>${esc(t('source'))}</th><th>${esc(t('quality'))}</th></tr>` +
         rows.slice(-15).reverse().map((r) => `<tr><td class="num">${esc(r[0])}</td><td class="num">${nf(r[1], digitsFor(r[1], s.unit))}</td>
-          <td class="small">${r[3] ? `<a href="${esc(r[3])}" target="_blank" rel="noopener">${esc(r[2])}</a>` : esc(r[2])}</td><td class="small">${esc(r[4])}</td></tr>`).join('') + '</table>';
+          <td class="small">${r[3] ? `<a href="${safeUrl(r[3])}" target="_blank" rel="noopener">${esc(r[2])}</a>` : esc(r[2])}</td><td class="small">${esc(r[4])}</td></tr>`).join('') + '</table>';
       $('#dCsv').onclick = () => {
         const csv = '﻿date,value,source,url,quality\n' + rows.map((r) => r.map((x) => `"${String(x ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
         const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = `${id}.csv`; a.click();
@@ -1444,7 +1450,7 @@
   }
   async function runNow() {
     if (!S.server || S.running) return;
-    const r = await fetch('/api/run?job=daily', { method: 'POST' });
+    const r = await fetch('/api/run?job=daily', { method: 'POST', headers: { 'X-Pulse': '1' } });
     if (!r.ok) { toast(t('run_failed'), ''); return; }
     S.running = true; updateLive(); toast(t('running'), ' ' + t('run_started'));
     const iv = setInterval(async () => {

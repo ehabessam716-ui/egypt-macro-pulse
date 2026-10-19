@@ -2,6 +2,8 @@
 <html lang="en" dir="ltr">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://api.coinbase.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <meta id="vp" name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Pulse · نبض — Egypt Macro</title>
 <meta name="description" content="Egypt Macro Pulse — what moves the Egyptian pound, live. Learning tool, not financial advice.">
@@ -16,27 +18,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
-<script>
-  // apply saved theme/lang before paint (no flash)
-  try {
-    const q = new URLSearchParams(location.search);
-    if (q.get('lang')) localStorage.setItem('pulse.lang', q.get('lang') === 'ar' ? 'ar' : 'en');
-    if (q.get('theme')) localStorage.setItem('pulse.theme', q.get('theme'));
-    if (q.get('mode')) localStorage.setItem('pulse.mode', q.get('mode') === 'pro' ? 'pro' : 'simple');
-    if (q.get('explain')) localStorage.setItem('pulse.explain', q.get('explain') === '1' ? '1' : '0');
-    if (q.get('view')) localStorage.setItem('pulse.view', q.get('view'));
-    // layout: auto-detect phone vs computer, unless the reader picked one
-    const pv = localStorage.getItem('pulse.view') || 'auto';
-    const phone = /Android|iPhone|iPod|Mobile/i.test(navigator.userAgent) ||
-      (matchMedia('(pointer: coarse)').matches && Math.min(screen.width, screen.height) < 820);
-    const eff = pv === 'auto' ? (phone ? 'mobile' : 'desktop') : pv;
-    document.documentElement.dataset.view = eff; document.documentElement.dataset.viewPref = pv;
-    document.documentElement.dataset.device = phone ? 'phone' : 'computer';
-    if (eff === 'desktop' && phone) document.getElementById('vp').setAttribute('content', 'width=1280');
-    const t = localStorage.getItem('pulse.theme'); if (t && t !== 'auto') document.documentElement.dataset.theme = t;
-    const l = localStorage.getItem('pulse.lang'); if (l === 'ar') { document.documentElement.lang = 'ar'; document.documentElement.dir = 'rtl'; }
-  } catch (e) {}
-</script>
+<script src="boot.js"></script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>

@@ -38,7 +38,7 @@ def collector(name: str):
 # Which collectors each scheduled job runs (SPEC §10).
 JOBS = {
     "daily": ["cbe_fx", "cbe_rates", "cbe_cpi", "cbe_auctions", "cbe_news", "yahoo", "gold_eg", "pmi",
-              "portwatch", "rss", "gdelt"],
+              "portwatch", "rss", "gdelt", "flows"],
     "global": ["fred", "yahoo", "intl", "portwatch"],
     "gpr": ["gpr"],
     "weekly": ["cbe_news", "portwatch", "intl", "fomc"],
@@ -49,7 +49,7 @@ JOBS["all"] = sorted({c for v in JOBS.values() for c in v} | {"fred", "gpr", "in
 
 def _load_all() -> None:
     # import modules for their @collector side effects
-    from . import cbe, fred, gdelt, gold_eg, gpr, intl, pmi, portwatch, rss, yahoo  # noqa: F401
+    from . import cbe, flows, fred, gdelt, gold_eg, gpr, intl, pmi, portwatch, rss, yahoo  # noqa: F401
     from .. import calendar  # noqa: F401  (registers the 'fomc' collector)
 
 

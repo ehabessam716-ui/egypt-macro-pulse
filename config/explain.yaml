@@ -834,6 +834,18 @@ series:
     down: ["Slower implied growth.", "نمو متوقع أبطأ."]
     related: [pmi]
 
+  egx_foreign_net:
+    what: ["How much foreign (non-Arab) investors bought minus sold on the Egyptian Exchange in one session, in EGP million. Negative = they sold more than they bought, taking money out.", "الأجانب (غير العرب) اشتروا قد إيه ناقص باعوا قد إيه في البورصة في جلسة واحدة، بالمليون جنيه. السالب معناه إنهم باعوا أكتر وطلعوا فلوس."]
+    drivers: ["Regional risk, the pound's outlook, Egypt's interest-rate edge and big one-off deals (sessions above EGP 3bn usually include block deals or bond trades).", "المخاطر في المنطقة وتوقعات الجنيه وفرق الفايدة، والصفقات الكبيرة (الجلسات فوق 3 مليار غالبا فيها صفقات أو سندات)."]
+    up: ["Foreign money coming in — more dollars, support for the pound.", "فلوس أجنبية داخلة، يعني دولارات أكتر ودعم للجنيه."]
+    down: ["Foreign money leaving — they sell pounds for dollars, which pushes the dollar up.", "فلوس أجنبية خارجة، بيبيعوا جنيه ويشتروا دولار، وده بيزود الدولار."]
+    related: [egx30_usd, cib_gdr_premium_pct, tbill_3m_btc]
+  tbill_foreign_net:
+    what: ["Foreign investors' net buying of Egyptian treasury bills, as reported in the press (EGP million). Negative = hot money leaving government debt.", "صافي شراء الأجانب لأذون الخزانة المصرية زي ما الصحافة نشرته (مليون جنيه). السالب معناه أموال ساخنة خارجة."]
+    drivers: ["Egypt's yield vs US yields, the pound's expected path and regional risk.", "العائد في مصر مقارنة بأمريكا، وتوقعات الجنيه، والمخاطر في المنطقة."]
+    up: ["Carry-trade money coming in — supports the pound.", "أموال الفايدة داخلة، وده بيسند الجنيه."]
+    down: ["Carry-trade money leaving — direct pressure on the pound.", "أموال الفايدة خارجة، وده ضغط مباشر على الجنيه."]
+    related: [tbill_3m_yield, tbill_3m_btc, egx_foreign_net]
   egx30_usd:
     what: ["The EGX30 stock index measured in US dollars — what a foreign investor's Egyptian shares are worth to them.", "مؤشر البورصة محسوب بالدولار، يعني الأسهم المصرية تسوى كام بالنسبة للمستثمر الأجنبي."]
     drivers: ["Share prices and the pound: if the pound weakens, foreigners lose even when prices in pounds rise.", "أسعار الأسهم والجنيه: لو الجنيه ضعف الأجنبي بيخسر حتى لو الأسعار بالجنيه زادت."]

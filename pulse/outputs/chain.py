@@ -135,19 +135,21 @@ def build_chain(v: DataView, rules: dict) -> dict:
          ("Traffic comes back only when the Red Sea is safe again.", "الحركة مش هترجع غير لما البحر الأحمر يبقى آمن."),
          ["suez_ratio_7dma", "suez_transits", "suez_receipts_fy"])
 
-    hm = R.get("HM01")
+    from ..fxstory import hot_money
+    H = hot_money(v)
     cp = _o(v, "cib_gdr_premium_pct")
-    st = NODATA if hm is None or not hm.evaluable else (int(hm.direction) if hm.fired else STEADY)
+    st = NODATA if not H["facts_en"] else (HURT if H["status"] == 1 else HELP if H["status"] == -1 else STEADY)
+    hv_en, hv_ar = H["headline"] or ((f"{cp.value:+.1f}% CIB gap", f"فرق {cp.value:+.1f}%") if cp else (None, None))
     node("hot", 1, "Foreign investors (hot money)", "المستثمرين الأجانب (الأموال الساخنة)", "⇅",
-         f"{cp.value:+.1f}% CIB gap" if cp else None, f"فرق {cp.value:+.1f}%" if cp else None, st,
-         (hm.explanation_en if hm and hm.evaluable else ""), (hm.explanation_ar if hm and hm.evaluable else ""),
-         [_src(cp)] if cp else [],
+         hv_en, hv_ar, st,
+         ("; ".join(H["facts_en"]).capitalize() + "." if H["facts_en"] else ""), ("، و".join(H["facts_ar"]) + "." if H["facts_ar"] else ""),
+         H["sources"],
          ("Foreigners who buy Egyptian government bills and shares for the high interest — fast money that can leave just as fast.",
           "أجانب بيشتروا أذون خزانة وأسهم مصرية عشان الفايدة العالية، فلوس بتدخل بسرعة وممكن تخرج بنفس السرعة."),
          ("When they come, they bring dollars and the pound strengthens; when they rush out, the pound comes under heavy pressure (as in 2022).",
           "لما بيدخلوا بيجيبوا دولارات والجنيه بيقوى، ولما بيخرجوا مرة واحدة الجنيه بيتضغط جامد زي اللي حصل في 2022."),
          ("They stay while Egypt's interest rate stays well above inflation and the pound looks stable.", "بيفضلوا طول ما الفايدة في مصر أعلى بكتير من التضخم والجنيه شكله مستقر."),
-         ["cib_gdr_premium_pct", "carry_ex_post_3m", "tbill_12m_btc", "egx30_usd"])
+         ["egx_foreign_net", "egx30_usd", "cib_gdr_premium_pct", "tbill_3m_btc", "carry_ex_post_3m"])
 
     fd = R.get("FD03")
     st = NODATA if fd is None or not fd.evaluable else (int(fd.direction) if fd.fired else STEADY)

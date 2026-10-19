@@ -30,6 +30,73 @@ def _f(x, d=2):
     return f"{x:,.{d}f}"
 
 
+DEAL_SIZE = 3000.0  # EGP mn — single sessions above this usually include one-off block deals / bond trades
+
+
+def hot_money(v: DataView) -> dict:
+    """Shared hot-money assessment: foreign flows, stocks in dollars, CIB London gap vs its own norm, T-bill demand.
+    status: 1 = money leaving (hurting the pound), -1 = coming in, 0 = no clear signal. Thresholds are tool defaults."""
+    sig_out, sig_in, fe, fa, src = 0, 0, [], [], []
+    headline = None
+    fl = v.series("egx_foreign_net")
+    if len(fl) >= 3:
+        last = fl.iloc[-5:]
+        tot, sells = float(last.sum()), int((last < 0).sum())
+        big = int((last.abs() > DEAL_SIZE).sum())
+        o = v.latest("egx_foreign_net")
+        fe.append(f"foreign investors were net sellers in {sells} of the last {len(last)} EGX sessions, a net {tot / 1000:+.1f}bn pounds"
+                  + (f" ({big} of those sessions were above EGP 3bn and may include one-off deals)" if big else "")
+                  + f"; latest {o.value / 1000:+.2f}bn on {o.date:%d %b}")
+        fa.append(f"الأجانب كانوا صافي بايعين في {sells} من آخر {len(last)} جلسات في البورصة، بصافي {tot / 1000:+.1f} مليار جنيه"
+                  + (f" ({big} جلسات منهم فوق 3 مليار وممكن يكون فيها صفقات استثنائية)" if big else "")
+                  + f"، وآخر جلسة {o.value / 1000:+.2f} مليار")
+        sig_out += sells >= 3 and tot < 0
+        sig_in += sells <= 1 and tot > 0
+        src.append(_src(o, "EGX foreign net flows (market reports)"))
+        headline = (f"{tot / 1000:+.1f}bn / 5 sessions", f"{tot / 1000:+.1f} مليار / 5 جلسات")
+    tb = v.latest("tbill_foreign_net")
+    if tb and (date.today() - tb.date).days <= 14:
+        fe.append(f"foreigners {'sold' if tb.value < 0 else 'bought'} a net EGP {abs(tb.value) / 1000:.1f}bn of T-bills ({tb.date:%d %b})")
+        fa.append(f"الأجانب {'باعوا' if tb.value < 0 else 'اشتروا'} أذون خزانة بصافي {abs(tb.value) / 1000:.1f} مليار جنيه")
+        sig_out += tb.value < 0
+        sig_in += tb.value > 0
+        src.append(_src(tb, "T-bill foreign flows (press)"))
+    es = v.series("egx30_usd")
+    if len(es) > 60:
+        ch10 = es.pct_change(10).dropna() * 100
+        now, pctl = float(ch10.iloc[-1]), float((ch10 < ch10.iloc[-1]).mean() * 100)
+        fe.append(f"Egyptian stocks measured in dollars moved {now:+.1f}% over 10 sessions — " +
+                  (f"worse than {100 - pctl:.0f}% of all 10-session periods since {es.index[0]:%Y}" if pctl <= 50 else f"better than {pctl:.0f}% of past periods"))
+        fa.append(f"البورصة بالدولار اتحركت {now:+.1f}% في 10 جلسات، " +
+                  (f"وده أسوأ من {100 - pctl:.0f}% من كل الفترات من {es.index[0]:%Y}" if pctl <= 50 else f"وده أحسن من {pctl:.0f}% من الفترات اللي فاتت"))
+        sig_out += pctl <= 10
+        sig_in += pctl >= 90
+        src.append(_src(v.latest("egx30_usd"), "EGX30 in USD (derived)"))
+    pm = v.series("cib_gdr_premium_pct")
+    if len(pm) > 60:
+        med = float(pm[pm.index >= pm.index[-1] - pd.Timedelta(days=90)].median())
+        dev = float(pm.iloc[-1]) - med
+        fe.append(f"CIB's London price implies a dollar {pm.iloc[-1]:+.1f}% above Cairo vs a usual {med:+.1f}% (90-day median)" +
+                  (" — foreigners are pricing a weaker pound" if dev > 1.5 else " — normal, no extra stress"))
+        fa.append(f"سعر التجاري الدولي في لندن بيدي دولار أعلى من القاهرة بـ {pm.iloc[-1]:+.1f}% مقابل {med:+.1f}% في العادي" +
+                  (" يعني الأجانب متوقعين جنيه أضعف" if dev > 1.5 else " يعني طبيعي ومفيش ضغط زيادة"))
+        sig_out += dev > 1.5
+        sig_in += dev < -1.5
+        src.append(_src(v.latest("cib_gdr_premium_pct"), "CIB London GDR vs Cairo (derived)"))
+    bt, yl = v.series("tbill_3m_btc"), v.series("tbill_3m_yield")
+    if len(bt) >= 5 and len(yl) >= 5:
+        b_now, b_prev = float(bt.iloc[-1]), float(bt.iloc[-5:-1].mean())
+        y_now, y_prev = float(yl.iloc[-1]), float(yl.iloc[-5])
+        fe.append(f"demand at the 3-month T-bill auction was {b_now:.1f}× the offer vs {b_prev:.1f}× before, yield {y_prev:.2f}% → {y_now:.2f}%")
+        fa.append(f"الطلب على أذون 3 شهور كان {b_now:.1f} مرة قد المعروض مقابل {b_prev:.1f} قبلها، والعائد من {y_prev:.2f}% لـ {y_now:.2f}%")
+        sig_out += b_now < 0.8 * b_prev
+        src.append(_src(v.latest("tbill_3m_btc"), "CBE T-bill auctions"))
+    strength = "strong" if sig_out >= 2 else "some" if sig_out == 1 else "none"
+    status = 1 if sig_out >= 2 else (-1 if sig_in >= 2 and sig_out == 0 else 0)
+    return {"status": status, "strength": strength, "signals_out": sig_out, "signals_in": sig_in,
+            "facts_en": fe, "facts_ar": fa, "sources": src, "headline": headline}
+
+
 def build_fx_story(v: DataView, quotes: list[dict], cbe: dict | None, mid: dict | None, news: list[dict]) -> dict | None:
     today = date.today()
     start_d = today - timedelta(days=WINDOW_DAYS)
@@ -67,41 +134,16 @@ def build_fx_story(v: DataView, quotes: list[dict], cbe: dict | None, mid: dict 
                  else "وده مش غير عادي، يعني السياسة مش السبب الأساسي دلوقتي.")],
              [_src(g, "Caldara & Iacoviello GPR (daily)")] + [{"name": n["outlet"] + ": " + n["title"][:70], "url": n["url"], "date": n["at"][:10]} for n in pol[:3]])
 
-    # 2) hot money: stocks in dollars, CIB London vs Cairo, T-bill demand
-    signals, facts_en, facts_ar, srcs = 0, [], [], []
-    e0, el = v.value_at("egx30_usd", start_d), v.latest("egx30_usd")
-    if e0 and el:
-        ch = _pct(el.value, e0.value)
-        facts_en.append(f"Egyptian stocks measured in dollars {'fell' if ch < 0 else 'rose'} {abs(ch):.1f}% since {e0.date:%d %b}")
-        facts_ar.append(f"البورصة المصرية محسوبة بالدولار {'نزلت' if ch < 0 else 'طلعت'} {abs(ch):.1f}% من {e0.date:%d/%m}")
-        signals += ch <= -3
-        srcs.append(_src(el, "EGX30 in USD (EGX30 ÷ CBE rate, derived)"))
-    pm = v.latest("cib_gdr_premium_pct")
-    if pm:
-        facts_en.append(f"CIB's London shares price the dollar {pm.value:+.1f}% above the Cairo rate ({pm.date:%d %b})"
-                        + (" — foreigners are pricing a weaker pound" if pm.value > 2 else ""))
-        facts_ar.append(f"سهم التجاري الدولي في لندن بيسعّر الدولار أعلى من سعر القاهرة بـ {pm.value:+.1f}%"
-                        + (" يعني الأجانب متوقعين جنيه أضعف" if pm.value > 2 else ""))
-        signals += pm.value > 2
-        srcs.append(_src(pm, "CIB London GDR vs Cairo (derived)"))
-    bt = v.series("tbill_3m_btc")
-    yl = v.series("tbill_3m_yield")
-    if len(bt) >= 5 and len(yl) >= 5:
-        b_now, b_prev = float(bt.iloc[-1]), float(bt.iloc[-5:-1].mean())
-        y_now, y_prev = float(yl.iloc[-1]), float(yl.iloc[-5])
-        facts_en.append(f"demand at the 3-month T-bill auction was {b_now:.1f}× the offer vs {b_prev:.1f}× on average before, while the yield moved {y_prev:.2f}% → {y_now:.2f}%")
-        facts_ar.append(f"الطلب على أذون الخزانة 3 شهور كان {b_now:.1f} مرة قد المعروض مقابل {b_prev:.1f} قبلها، والعائد اتحرك من {y_prev:.2f}% لـ {y_now:.2f}%")
-        signals += b_now < 0.8 * b_prev
-        o = v.latest("tbill_3m_btc")
-        srcs.append(_src(o, "CBE T-bill auctions"))
-    if facts_en:
-        st = "strong" if signals >= 2 else "some" if signals == 1 else "none"
+    # 2) hot money — one shared assessment (also drives the chain box)
+    hm = hot_money(v)
+    if hm["facts_en"]:
+        st = hm["strength"]
         item("hot_money", "⇅", st, ["Hot money leaving", "خروج الأموال الساخنة"],
-             ["; ".join(facts_en) + ". " + ("Together these point to foreign portfolio money ('hot money') leaving or hesitating — each exit means selling pounds for dollars."
-                                              if st != "none" else "These do not show a clear foreign exit."),
-              "، و".join(facts_ar) + ". " + ("وده كله بيقول إن الأموال الساخنة (استثمارات الأجانب قصيرة المدى) بتخرج أو مترددة، وكل خروج معناه بيع جنيه وشرا دولار."
-                                              if st != "none" else "ومفيش علامة واضحة على خروج الأجانب.")],
-             srcs)
+             ["; ".join(hm["facts_en"]) + ". " + ("Together these point to foreign portfolio money ('hot money') leaving — each exit means selling pounds for dollars."
+                                                    if st != "none" else "These do not show a clear foreign exit."),
+              "، و".join(hm["facts_ar"]) + ". " + ("وده كله بيقول إن الأموال الساخنة (استثمارات الأجانب قصيرة المدى) بتخرج، وكل خروج معناه بيع جنيه وشرا دولار."
+                                                    if st != "none" else "ومفيش علامة واضحة على خروج الأجانب.")],
+             hm["sources"])
 
     # 3) global dollar
     dx0, dxl = v.value_at("dxy", start_d), v.latest("dxy")

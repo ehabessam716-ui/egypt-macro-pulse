@@ -35,6 +35,22 @@ def create_app():
     from fastapi.staticfiles import StaticFiles
 
     app = FastAPI(title="Pulse", docs_url=None, redoc_url=None)
+    from fastapi import Request
+
+    @app.middleware("http")
+    async def guard(request: Request, call_next):
+        # DNS-rebinding guard: only answer to localhost names
+        host = (request.headers.get("host") or "").split(":")[0]
+        if host not in ("127.0.0.1", "localhost"):
+            return JSONResponse({"error": "forbidden host"}, status_code=403)
+        # CSRF guard: state-changing calls need a custom header (a cross-site page cannot send it without CORS)
+        if request.method != "GET" and request.headers.get("x-pulse") != "1":
+            return JSONResponse({"error": "missing X-Pulse header"}, status_code=403)
+        resp = await call_next(request)
+        resp.headers["X-Content-Type-Options"] = "nosniff"
+        resp.headers["X-Frame-Options"] = "DENY"
+        resp.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        return resp
 
     @app.get("/api/status")
     def status():

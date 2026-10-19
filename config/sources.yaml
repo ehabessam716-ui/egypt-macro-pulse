@@ -37,6 +37,13 @@ sources:
     access: FREE_API
     notes: "Keyless public API, CORS-enabled, refreshed about every minute. Mid-market USD/EGP — the same kind of rate Google shows (Google itself is not scraped: its terms forbid automated access). Used only by the live layer (browser every 30 s, server every ~5 min); never written to the official observations table."
     series: []
+  - id: flows
+    name: Foreign investor flows from daily market reports (Amwal Al Ghad, Middle East Observer)
+    url: https://en.amwalalghad.com/?s=EGX&feed=rss2
+    kind: flows
+    access: SCRAPE
+    notes: "EGX's own nationality-flow data sits behind an anti-bot wall, so the figures are read from press reports that quote it. robots.txt of both sites allows crawling. Each value keeps its article URL; quality 'secondary'. Sign: negative = foreign net selling."
+    series: [egx_foreign_net, tbill_foreign_net]
   - id: egx
     name: Egyptian Exchange (foreign net flows bulletin)
     url: https://www.egx.com.eg/en/homepage.aspx

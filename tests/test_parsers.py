@@ -83,3 +83,42 @@ def test_cpi_release_negative_in_words():
     out = parse_cpi_release(t)
     assert ("cpi_urban_mom", date(2025, 7, 1), -0.5) in out and ("cpi_urban_mom", date(2026, 6, 1), -0.4) in out
     assert ("cpi_urban_mom", date(2026, 7, 1), 0.0) in out
+
+
+def test_foreign_flows_parser():
+    from datetime import date
+    from pulse.collectors.flows import parse_flows
+    a = ("Egypt's stocks start week in dark red. The EGX30 fell on Sunday. Non-Arab foreign investors recorded net sales of "
+         "5.562 billion Egyptian pounds, while Egyptian investors were net buyers of 5.121 billion pounds and Arab investors "
+         "purchased a net 440.522 million pounds.")
+    r = parse_flows(a, date(2026, 10, 18))
+    assert len(r) == 1 and r[0]["series"] == "egx_foreign_net" and r[0]["value"] == -5562.0 and r[0]["date"] == date(2026, 10, 18)
+    b = ("EGX rebounds on Thursday, Oct. 1. Egyptian investors recorded EGP318.5mn of net buying. Foreign investors sold "
+         "EGP 225.7mn, including EGP 220.7mn of net selling by foreign institutions.")
+    r = parse_flows(b, date(2026, 10, 2))
+    assert r[0]["value"] == -225.7 and r[0]["date"] == date(2026, 10, 1)
+    c = "Reported foreign net selling reached EGP5.56bn, intensifying concerns."
+    assert parse_flows(c, date(2026, 10, 19))[0]["value"] == -5560.0
+    d = "Foreign investors sold a net EGP 5.8bn of Egyptian treasury bills on Wednesday, traders said."
+    r = parse_flows(d, date(2026, 10, 15))
+    assert r[0]["series"] == "tbill_foreign_net" and r[0]["value"] == -5800.0 and r[0]["date"] == date(2026, 10, 14)
+    e = "Foreign investors were net buyers of EGP 1.2bn on the EGX on Monday."
+    assert parse_flows(e, date(2026, 10, 12))[0]["value"] == 1200.0
+
+
+def test_foreign_flows_raw_pounds():
+    from datetime import date
+    from pulse.collectors.flows import parse_flows
+    t = ("EGX closes mostly green on 19 October. Egyptians and Arabs were net buyers with 26,929,042,681 Egyptian pounds and "
+         "83,336,831 pounds, respectively. Meanwhile, non-Arab foreigners were net sellers with 27,012,379,512 pounds.")
+    r = parse_flows(t, date(2026, 10, 19))
+    assert len(r) == 1 and abs(r[0]["value"] + 27012.38) < 0.01 and r[0]["date"] == date(2026, 10, 19)
+
+
+def test_foreign_flows_respectively():
+    from datetime import date
+    from pulse.collectors.flows import parse_flows
+    t = ("EGX closes in green area on October 15. Arabs and non-Arab foreigners were net buyers with 9,422,965,489 Egyptian pounds "
+         "and 307,832,282 pounds, respectively. On the other hand, Egyptians were net sellers with 9,730,797,772 pounds.")
+    r = parse_flows(t, date(2026, 10, 15))
+    assert len(r) == 1 and abs(r[0]["value"] - 307.83) < 0.01
