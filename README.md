@@ -5,7 +5,9 @@ USD/EGP and Egypt's economy. **Not financial advice.** Spec: [SPEC.md](SPEC.md).
 
 ## Open the app
 
-**Public (GitHub Pages):** https://ehabessam716-ui.github.io/egypt-macro-pulse/ — rebuilt by GitHub Actions
+**Website:** https://egypt-macro-pulse-vercel.vercel.app/ (Vercel front door with security headers — see `vercel/`)
+
+**Public (GitHub Pages, origin):** https://ehabessam716-ui.github.io/egypt-macro-pulse/ — rebuilt by GitHub Actions
 (`.github/workflows/pulse.yml`) on the same schedule; the database lives in the `state` release.
 Run it on demand: GitHub → Actions → Pulse → *Run workflow*.
 
