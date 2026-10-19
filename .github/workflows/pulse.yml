@@ -72,6 +72,13 @@ jobs:
         run: |
           mkdir -p data
           gh release download state --pattern pulse.db --dir data --clobber || echo "No saved database yet — starting fresh (first run backfills history)."
+          # keep the brief archive: briefs are not in git, so take them from the last published site
+          mkdir -p briefs prev
+          if gh release download state --pattern site.tar.gz --dir prev --clobber; then
+            tar -xzf prev/site.tar.gz -C prev ./briefs 2>/dev/null || tar -xzf prev/site.tar.gz -C prev briefs 2>/dev/null || true
+            cp -n prev/briefs/*.md prev/briefs/*.html briefs/ 2>/dev/null || true
+          fi
+          echo "briefs restored: $(ls briefs | wc -l)"
 
       - name: Run
         run: |

@@ -57,7 +57,7 @@ def run_job(job: str, backfill: bool = False, dry_run: bool = False) -> int:
         from .events import scan_candidates
         step("events", scan_candidates, conn)
         conn.commit()
-        analyse(conn, brief=job in ("daily", "all"), weekly=job in ("weekly", "all"), backtest=job in ("weekly", "all"))
+        analyse(conn, brief=True, weekly=job in ("weekly", "all"), backtest=job in ("weekly", "all"))  # brief every run: the site always carries today's
         cal.write_alerts(conn)
         failed = [k for k, v in results.items() if v["status"] != "ok"]
         log.info("=== run %s done; collectors failed: %s ===", run_id, failed or "none")
