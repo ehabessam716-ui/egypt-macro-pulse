@@ -1,7 +1,6 @@
-/* Pulse service worker: makes the site installable and fast.
-   App files: cache-first (refreshed in the background). Data files (data/*.js, briefs): always network-first,
-   so live prices and new numbers are never served stale; the cache is only used when offline. */
-const VERSION = 'pulse-v1';
+/* Pulse service worker — makes the site installable and usable offline.
+   Network-first for everything: you always get the newest app and data when online; the cache is used only offline. */
+const VERSION = 'pulse-v2';
 const APP = ['./', './index.html', './styles.css', './app.js', './logo.svg', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(VERSION).then((c) => c.addAll(APP)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', (e) => {
@@ -10,14 +9,8 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
   if (e.request.method !== 'GET' || url.origin !== location.origin || url.pathname.includes('/api/')) return;
-  const isData = url.pathname.includes('/data/') || url.pathname.includes('/briefs/');
-  if (isData) {
-    e.respondWith(fetch(e.request).then((r) => { const copy = r.clone(); caches.open(VERSION).then((c) => c.put(e.request, copy)); return r; })
-      .catch(() => caches.match(e.request, { ignoreSearch: true })));
-    return;
-  }
-  e.respondWith(caches.match(e.request).then((hit) => {
-    const net = fetch(e.request).then((r) => { if (r.ok) { const copy = r.clone(); caches.open(VERSION).then((c) => c.put(e.request, copy)); } return r; }).catch(() => hit);
-    return hit || net;
-  }));
+  e.respondWith(fetch(e.request, { cache: 'no-store' }).then((r) => {
+    if (r.ok) { const copy = r.clone(); caches.open(VERSION).then((c) => c.put(e.request, copy)); }
+    return r;
+  }).catch(() => caches.match(e.request, { ignoreSearch: true })));
 });

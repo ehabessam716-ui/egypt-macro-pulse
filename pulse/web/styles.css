@@ -207,6 +207,109 @@ html[data-view="mobile"][data-device="computer"] .drawer-panel { width: 440px; i
 html[data-view="mobile"][data-device="computer"] .toasts { inset-inline-end: calc(50% - 205px); }
 html[data-view="mobile"] main { padding-bottom: 96px; }
 
+/* =====================================================================================
+   PHONE APP DESIGN — active when html[data-view="mobile"][data-device] (auto on phones, or forced)
+   ===================================================================================== */
+html[data-view="mobile"][data-device] body { font-size: 15px; }
+html[data-view="mobile"][data-device] main { padding: 10px 12px 96px; }
+html[data-view="mobile"][data-device] .topbar { padding: 8px 12px; gap: 6px; }
+html[data-view="mobile"][data-device] .wm-sub, html[data-view="mobile"][data-device] #runBtn, html[data-view="mobile"][data-device] #searchBtn,
+html[data-view="mobile"][data-device] #themeBtn, html[data-view="mobile"][data-device] .live #liveText, html[data-view="mobile"][data-device] .hide-sm { display: none !important; }
+html[data-view="mobile"][data-device] .brand img { width: 30px; height: 30px; }
+html[data-view="mobile"][data-device] .wm-name { font-size: 16px; }
+html[data-view="mobile"][data-device] .top-actions { gap: 4px; }
+html[data-view="mobile"][data-device] .btn.icon, html[data-view="mobile"][data-device] .seg { height: 32px; }
+html[data-view="mobile"][data-device] .btn.icon { width: 32px; }
+html[data-view="mobile"][data-device] .seg button { padding: 0 8px; font-size: 12px; }
+html[data-view="mobile"][data-device] .live { padding: 0 9px; height: 32px; }
+/* in Simple mode the bottom bar is the navigation */
+html[data-view="mobile"][data-device][data-ui="simple"] .tabs { display: none; }
+html[data-view="mobile"][data-device] .tabs { top: 49px; padding: 6px 10px; }
+html[data-view="mobile"][data-device] .bottombar { display: flex; position: fixed; bottom: 0; left: 0; right: 0; z-index: 40; justify-content: space-around;
+  padding: 6px 6px max(8px, env(safe-area-inset-bottom)); background: color-mix(in srgb, var(--surface) 94%, transparent);
+  backdrop-filter: blur(16px); border-top: 1px solid var(--border); }
+html[data-view="mobile"][data-device] .bottombar button { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; border: 0; background: none;
+  font-size: 11px; color: var(--text-2); padding: 4px 2px; cursor: pointer; border-radius: 12px; }
+html[data-view="mobile"][data-device] .bottombar button span:first-child { font-size: 19px; line-height: 1; }
+html[data-view="mobile"][data-device] .bottombar button[aria-current="page"] { color: var(--brand); font-weight: 650; background: var(--brand-soft); }
+
+/* slim live price strip under the header */
+.pricebar { display: none; }
+html[data-view="mobile"][data-device] .pricebar { display: flex; gap: 14px; overflow-x: auto; scrollbar-width: none; padding: 7px 12px; font-size: 12.5px;
+  background: var(--brand-ink); color: var(--bg); position: sticky; top: 49px; z-index: 24; white-space: nowrap; }
+html[data-view="mobile"][data-device][data-ui="pro"] .pricebar { display: none; }
+.pricebar::-webkit-scrollbar { display: none; }
+.pricebar .pb { display: inline-flex; gap: 5px; align-items: baseline; }
+.pricebar .pb b { font-weight: 650; } .pricebar .pb i { font-style: normal; font-size: 11px; opacity: .85; }
+.pricebar .pb i.p { color: #ff9b9b; } .pricebar .pb i.r { color: #9cc7ff; }
+
+/* hero */
+html[data-view="mobile"][data-device] .hero2 { padding: 16px 16px 14px; border-radius: 18px; margin-bottom: 12px; }
+html[data-view="mobile"][data-device] .h2-sent { font-size: 21px; line-height: 1.32; margin: 6px 0; }
+html[data-view="mobile"][data-device] .h2-good { font-size: 13.5px; margin-bottom: 10px; }
+html[data-view="mobile"][data-device] .eyebrow { font-size: 11px; }
+html[data-view="mobile"][data-device] .bigs { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+html[data-view="mobile"][data-device] .bign { padding: 8px 9px; border-radius: 12px; }
+html[data-view="mobile"][data-device] .bn-l { font-size: 10.5px; line-height: 1.25; min-height: 26px; }
+html[data-view="mobile"][data-device] .bn-v { font-size: 19px; }
+html[data-view="mobile"][data-device] .bn-u { font-size: 10.5px; } html[data-view="mobile"][data-device] .bn-s { font-size: 10px; }
+
+/* cards */
+html[data-view="mobile"][data-device] .card { padding: 13px; border-radius: 16px; }
+html[data-view="mobile"][data-device] .card h3 { font-size: 15px; flex-wrap: wrap; }
+html[data-view="mobile"][data-device] h2.sec { font-size: 15px; margin: 20px 0 10px; }
+html[data-view="mobile"][data-device] .page-head h1 { font-size: 20px; }
+
+/* chain as a tidy list */
+html[data-view="mobile"][data-device] .chain h3 .btn { width: 100%; justify-content: center; height: 42px; font-size: 14.5px; margin-top: 6px; }
+html[data-view="mobile"][data-device] .cn-two { grid-template-columns: 1fr; gap: 4px; }
+html[data-view="mobile"][data-device] .cn-grid, html[data-view="mobile"][data-device] .cn-grid.cn-2 { grid-template-columns: 1fr; gap: 6px; }
+html[data-view="mobile"][data-device] .cn { align-items: center; padding: 9px 11px; border-radius: 12px; }
+html[data-view="mobile"][data-device] .cn-ic { width: 32px; height: 32px; font-size: 15px; }
+html[data-view="mobile"][data-device] .cn-body { display: grid; grid-template-columns: 1fr auto; column-gap: 8px; width: 100%; align-items: center; }
+html[data-view="mobile"][data-device] .cn-t { font-size: 13.5px; } html[data-view="mobile"][data-device] .cn-v { font-size: 13.5px; grid-row: 1 / span 2; grid-column: 2; text-align: end; max-width: 46vw; }
+html[data-view="mobile"][data-device] .cn-s { font-size: 11px; }
+html[data-view="mobile"][data-device] .cn-label { margin: 10px 2px 6px; }
+html[data-view="mobile"][data-device] .cn-arrow { margin: 2px 0; font-size: 14px; } html[data-view="mobile"][data-device] .cn-arrow em { font-size: 11px; }
+
+/* live block */
+html[data-view="mobile"][data-device] .g-live { grid-template-columns: 1fr; gap: 6px; }
+html[data-view="mobile"][data-device] .lq-row { grid-auto-columns: 132px; }
+html[data-view="mobile"][data-device] .lq-v { font-size: 16px; }
+html[data-view="mobile"][data-device] .live-card:not(.expanded) .story .sig:nth-child(n+3) { display: none; }
+.more-btn { display: none; }
+html[data-view="mobile"][data-device] .live-card:not(.expanded) .more-btn { display: block; width: 100%; margin-top: 8px; }
+html[data-view="mobile"][data-device] .minis { grid-template-columns: 1fr 1fr; }
+html[data-view="mobile"][data-device] .mini b { font-size: 17px; }
+html[data-view="mobile"][data-device] .sig p { font-size: 13.5px; }
+
+/* lessons + changes */
+html[data-view="mobile"][data-device] .lessons { grid-auto-columns: 150px; }
+html[data-view="mobile"][data-device] .lessons.full { grid-template-columns: 1fr 1fr; }
+html[data-view="mobile"][data-device] .lesson { min-height: 104px; padding: 12px; }
+html[data-view="mobile"][data-device] .lesson-card { padding: 16px; } html[data-view="mobile"][data-device] .lesson-step { font-size: 17px; min-height: 120px; }
+html[data-view="mobile"][data-device] ul.changes li { font-size: 13.5px; }
+
+/* pro tiles */
+html[data-view="mobile"][data-device] .g-hero, html[data-view="mobile"][data-device] .g-2, html[data-view="mobile"][data-device] .g-3 { grid-template-columns: 1fr; }
+html[data-view="mobile"][data-device] .kpis, html[data-view="mobile"][data-device] .g-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+html[data-view="mobile"][data-device] .tile { min-height: 124px; padding: 10px; }
+html[data-view="mobile"][data-device] .tile .t-val { font-size: 18px; }
+html[data-view="mobile"][data-device] .gauge-wrap { grid-template-columns: 1fr; justify-items: center; text-align: center; }
+html[data-view="mobile"][data-device] .sub { grid-template-columns: 100px 1fr 46px; }
+html[data-view="mobile"][data-device] .chart { height: 240px; }
+
+/* detail panel = bottom sheet */
+html[data-view="mobile"][data-device] .drawer-panel { top: auto; bottom: 0; left: 0; right: 0; inset-inline-end: 0; width: 100%; max-height: 90vh;
+  border-radius: 22px 22px 0 0; border: 0; border-top: 1px solid var(--border); padding: 26px 14px 40px; transform: translateY(105%); }
+html[data-view="mobile"][data-device] .drawer.open .drawer-panel { transform: none; }
+html[data-view="mobile"][data-device] .drawer-panel::before { content: ""; position: absolute; top: 9px; left: 50%; width: 44px; height: 5px; margin-left: -22px;
+  border-radius: 3px; background: var(--border-strong); }
+html[data-view="mobile"][data-device="computer"] .drawer-panel { left: calc(50% - 220px); right: auto; width: 440px; }
+html[data-view="mobile"][data-device] .tu p { font-size: 15px; }
+html[data-view="mobile"][data-device] .facts { grid-template-columns: 1fr; }
+html[data-view="mobile"][data-device] .toasts { bottom: 84px; }
+
 /* ---------- SIMPLE / tutor mode ---------- */
 .simple { max-width: 1080px; margin: 0 auto; }
 .hero2 { border-radius: 22px; padding: 26px 26px 20px; margin-bottom: 14px; color: var(--text); border: 1px solid var(--border);

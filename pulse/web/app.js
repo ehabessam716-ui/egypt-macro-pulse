@@ -489,6 +489,7 @@
         <div><div class="small muted" style="margin:10px 0 6px">${esc(t('live_reads'))}</div><div class="story">${reads}</div></div>
         <div><div class="minis">${cbe}${gold}</div><div class="small muted" style="margin:12px 0 6px">${esc(t('headlines'))}</div><ul class="news">${news}</ul></div>
       </div>
+      ${ins.length > 2 ? `<button class="btn more-btn" type="button" data-more="1">${esc(AR() ? 'اعرض كل القراءات' : 'Show all live reads')} (${ins.length})</button>` : ''}
       <p class="tiny muted" style="margin:8px 0 0">${esc(t('live_note'))}</p></section>`;
   }
   async function pollLive(announce) {
@@ -499,9 +500,11 @@
       if (old && old.generated !== L.generated) {
         S.liveFlash = new Set(L.quotes.filter((q) => { const o = old.quotes.find((x) => x.id === q.id); return o && o.price !== q.price; }).map((q) => q.id));
         { const el = $('#liveSlot'); if (el) el.innerHTML = liveSection(); }
+        priceBar();
         setTimeout(() => { S.liveFlash = new Set(); }, 2500);
       }
       S.lastPoll = Date.now();
+      priceBar();
     } catch (e) { /* live.js not published yet */ }
     updateLive();
   }
@@ -907,7 +910,27 @@
     return [['overview', '◉', t('overview')], ...S.D.domains.map((d) => ['d/' + d.id, DOMAIN_ICON[d.id], AR() ? d.name_ar : d.name_en]),
       ['signals', 'ϟ', t('signals')], ['calendar', '▦', t('calendar')], ['brief', 'ع', t('brief')], ['data', '≡', t('data')]];
   }
+  function priceBar() {
+    const el = $('#pricebar');
+    if (!el || !S.D) return;
+    const L = S.L;
+    const items = [];
+    const fx = L && L.cbe ? L.cbe.buy : (S.D.series.fx_cbe_official || {}).value;
+    if (fx) items.push(['$', nf(fx, 2), null]);
+    const gi = (S.D.series.fx_gold_implied || {}).value;
+    if (gi) items.push([AR() ? 'دولار الدهب' : 'Gold $', nf(gi, 2), null]);
+    for (const [id, lab, labAr, d] of [['brent', 'Oil', 'بترول', 1], ['egx30', 'EGX30', 'البورصة', 0], ['gold', 'Gold', 'دهب', 0]]) {
+      const q = L ? L.quotes.find((x) => x.id === id) : null;
+      if (q) items.push([AR() ? labAr : lab, (id === 'brent' ? '$' : '') + nf(q.price, id === 'egx30' || id === 'gold' ? 0 : 1), q.chg_pct, q.sign]);
+    }
+    el.innerHTML = items.map(([l, v, c, sg]) => {
+      const cls = c == null ? '' : (Math.sign(c) * (sg || 0) > 0 ? 'p' : Math.sign(c) * (sg || 0) < 0 ? 'r' : '');
+      return `<span class="pb"><span>${esc(l)}</span><b class="num">${v}</b>${c == null ? '' : `<i class="num ${cls}">${c > 0 ? '+' : ''}${nf(c, 1)}%</i>`}</span>`;
+    }).join('') + `<span class="pb"><i>● ${esc(ago(L ? L.generated : S.D.generated))}</i></span>`;
+  }
   function renderNav() {
+    document.documentElement.dataset.ui = S.mode;
+    priceBar();
     $$('[data-mode-btn]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.modeBtn === S.mode)));
     $('#explainBtn').hidden = S.mode === 'simple';
     if (S.mode === 'simple') {
@@ -1090,6 +1113,8 @@
   // ------------------------------------------------------------------ events
   function bind() {
     document.addEventListener('click', (e) => {
+      const mb = e.target.closest('[data-more]');
+      if (mb) { const c = mb.closest('.live-card'); if (c) c.classList.add('expanded'); return; }
       const nEl = e.target.closest('[data-node]');
       if (nEl) { e.preventDefault(); if (S.tour && !e.target.closest('.tourbar')) S.tour = null; openNode(nEl.dataset.node); return; }
       const tr = e.target.closest('[data-tour]');
@@ -1124,6 +1149,13 @@
       else if (e.key === 'Escape') { closePalette(); closeDrawer(); }
     });
     window.addEventListener('hashchange', onHash);
+    let y0 = null;
+    const panel = $('#drawer .drawer-panel');
+    panel.addEventListener('touchstart', (e) => { y0 = panel.scrollTop <= 0 ? e.touches[0].clientY : null; }, { passive: true });
+    panel.addEventListener('touchend', (e) => {
+      if (y0 != null && document.documentElement.dataset.view === 'mobile' && e.changedTouches[0].clientY - y0 > 90) closeDrawer();
+      y0 = null;
+    }, { passive: true });
     if (window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (S.theme === 'auto') setTimeout(drawAllCharts, 30); });
   }
 
