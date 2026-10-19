@@ -505,6 +505,8 @@
       }
       S.lastPoll = Date.now();
       priceBar();
+      { const el = $('#bigSlot'); if (el) el.outerHTML = bigNumbers(); }
+      if (!old) { if (S.mode === 'simple' && S.route === 'home') render(true); else { const el = $('#liveSlot'); if (el) el.innerHTML = liveSection(); } }
     } catch (e) { /* live.js not published yet */ }
     updateLive();
   }
@@ -513,7 +515,13 @@
   const ST = { '-1': ['r', 'helping'], '1': ['p', 'hurting'], '0': ['n', 'steady'], 'null': ['x', 'no_data_short'] };
   const stOf = (n) => ST[String(n.status)] || ST.null;
   const L2 = (pair) => (pair ? (AR() ? pair[1] || pair[0] : pair[0]) : '');
-  const nodeById = (id) => (S.D.chain ? S.D.chain.nodes.find((n) => n.id === id) : null);
+  // the pound box follows the live CBE rate (updated every ~15 min) instead of the morning build
+  function liveNode(n) {
+    if (!n || n.id !== 'pound' || !S.L || !S.L.cbe) return n;
+    const v = S.L.cbe.buy;
+    return { ...n, value: [`${nf(v, 2)} per $`, `${nf(v, 2)} جنيه للدولار`] };
+  }
+  const nodeById = (id) => liveNode(S.D.chain ? S.D.chain.nodes.find((n) => n.id === id) : null);
 
   function chainCard(n) {
     const [cls, key] = stOf(n);
@@ -526,7 +534,7 @@
   function chainMap() {
     const C = S.D.chain;
     if (!C) return '';
-    const row = (id) => C.nodes.filter((n) => n.row === id).map(chainCard).join('');
+    const row = (id) => C.nodes.filter((n) => n.row === id).map((n) => chainCard(liveNode(n))).join('');
     const title = (id) => esc(L2(C.rows.find((r) => r.id === id).title));
     const arrow = (txt) => `<div class="cn-arrow"><span aria-hidden="true">↓</span>${txt ? `<em>${esc(txt)}</em>` : ''}</div>`;
     return `<section class="card chain"><h3>${esc(t('chain_title'))}<button class="btn primary" data-tour="start" type="button">▶ ${esc(t('start_tour'))}</button></h3>
@@ -554,16 +562,26 @@
       <p class="small muted" style="margin-top:-4px">${esc(t('lessons_hint'))}</p>
       <div class="lessons ${full ? 'full' : ''}">${ls.map(card).join('')}</div></section>`;
   }
+  function liveFx() {
+    const L = S.L;
+    const cbe = L && L.cbe ? L.cbe.buy : (S.D.series.fx_cbe_official || {}).value;
+    const mq = L ? (L.quotes || []).find((q) => q.id === 'usd_egp') : null;
+    const g = L && L.gold_eg;
+    const gold = g && g.k21 && g.xau ? g.k21 / (g.xau / 31.1035 * 0.875) : (S.D.series.fx_gold_implied || {}).value;
+    return { cbe, market: mq, gold };
+  }
   function bigNumbers() {
-    const fx = S.L && S.L.cbe ? S.L.cbe.buy : (S.D.series.fx_cbe_official || {}).value;
-    const gq = S.D.series.fx_gold_implied || {};
+    const F = liveFx();
+    const fx = F.cbe;
+    const gq = { value: F.gold };
     const bq = S.L ? (S.L.quotes || []).find((q) => q.id === 'brent') : null;
     const oil = bq ? bq.price : (S.D.series.brent_fut || {}).value;
     const big = (label, val, unit, sub) => `<div class="bign"><span class="bn-l">${esc(label)}</span><span class="bn-v num" dir="ltr">${val}</span>
       <span class="bn-u">${esc(unit)}</span>${sub ? `<span class="bn-s">${sub}</span>` : ''}</div>`;
     const gap = gq.value && fx ? (gq.value / fx - 1) * 100 : null;
-    return `<div class="bigs">
-      ${big(t('big_dollar'), fx ? nf(fx, 2) : '—', t('pounds'), AR() ? 'السعر الرسمي للبنك المركزي' : 'official CBE rate')}
+    return `<div class="bigs" id="bigSlot">
+      ${big(t('big_dollar'), fx ? nf(fx, 2) : '—', t('pounds'), (AR() ? 'السعر الرسمي للبنك المركزي' : 'official CBE rate') +
+        (F.market ? `<br>${AR() ? 'السوق' : 'market'} <span class="num">${nf(F.market.price, 2)}</span>` : ''))}
       ${big(t('big_gold'), gq.value ? nf(gq.value, 2) : '—', t('pounds'), gap == null ? '' : `<span class="num">${gap > 0 ? '+' : ''}${nf(gap, 1)}%</span> ${AR() ? (Math.abs(gap) < 3 ? '— طبيعي' : '— انتبه') : (Math.abs(gap) < 3 ? '— normal' : '— watch')}`)}
       ${big(t('big_oil'), oil ? '$' + nf(oil, 0) : '—', t('per_barrel'), AR() ? 'مقابل <span class="num">75</span> دولار في الموازنة' : 'vs $75 in the budget')}
     </div>`;
@@ -915,18 +933,18 @@
     if (!el || !S.D) return;
     const L = S.L;
     const items = [];
-    const fx = L && L.cbe ? L.cbe.buy : (S.D.series.fx_cbe_official || {}).value;
-    if (fx) items.push(['$', nf(fx, 2), null]);
-    const gi = (S.D.series.fx_gold_implied || {}).value;
-    if (gi) items.push([AR() ? 'دولار الدهب' : 'Gold $', nf(gi, 2), null]);
-    for (const [id, lab, labAr, d] of [['brent', 'Oil', 'بترول', 1], ['egx30', 'EGX30', 'البورصة', 0], ['gold', 'Gold', 'دهب', 0]]) {
+    const F = liveFx();
+    if (F.cbe) items.push([AR() ? 'دولار البنك المركزي' : '$ CBE', nf(F.cbe, 2), null]);
+    if (F.market) items.push([AR() ? 'دولار السوق' : '$ market', nf(F.market.price, 2), F.market.chg_pct, F.market.sign]);
+    if (F.gold) items.push([AR() ? 'دولار الدهب' : '$ via gold', nf(F.gold, 2), null]);
+    for (const [id, lab, labAr, d] of [['brent', 'Oil', 'بترول', 1], ['egx30', 'EGX30', 'البورصة', 0], ['gold', 'Gold $/oz', 'دهب عالمي', 0]]) {
       const q = L ? L.quotes.find((x) => x.id === id) : null;
       if (q) items.push([AR() ? labAr : lab, (id === 'brent' ? '$' : '') + nf(q.price, id === 'egx30' || id === 'gold' ? 0 : 1), q.chg_pct, q.sign]);
     }
     el.innerHTML = items.map(([l, v, c, sg]) => {
       const cls = c == null ? '' : (Math.sign(c) * (sg || 0) > 0 ? 'p' : Math.sign(c) * (sg || 0) < 0 ? 'r' : '');
       return `<span class="pb"><span>${esc(l)}</span><b class="num">${v}</b>${c == null ? '' : `<i class="num ${cls}">${c > 0 ? '+' : ''}${nf(c, 1)}%</i>`}</span>`;
-    }).join('') + `<span class="pb"><i>● ${esc(ago(L ? L.generated : S.D.generated))}</i></span>`;
+    }).join('') + `<span class="pb pb-time"><i>● ${esc(AR() ? 'اتحدّث' : 'updated')} ${esc(ago(L ? L.generated : S.D.generated))}</i></span>`;
   }
   function renderNav() {
     document.documentElement.dataset.ui = S.mode;
