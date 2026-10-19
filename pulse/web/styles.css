@@ -807,3 +807,7 @@ html[dir="rtl"] .fl-svg { direction: ltr; }
 
 .flow { max-width: 820px; margin-inline: auto; }
 .fl-core { flex-direction: row; } .fl-core .f-pound { order: 0; }
+.fl-mid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.fl-col, .fl-col .fc { min-width: 0; max-width: 100%; }
+.fc-t { overflow-wrap: anywhere; }
+html[data-view="mobile"][data-device] .fl-mid { gap: 10px 26px; }
