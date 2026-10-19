@@ -1194,7 +1194,7 @@
   function viewBrief() {
     const b = S.D.brief;
     return `<div class="view"><div class="page-head"><div><h1>${esc(t('brief'))}</h1><p class="num">${esc(b.date)}</p></div>
-      <div style="display:flex;gap:8px"><button class="btn" type="button" onclick="window.print()">⎙ ${esc(t('print'))}</button>
+      <div style="display:flex;gap:8px"><button class="btn" type="button" data-print="1">⎙ ${esc(t('print'))}</button>
       <a class="btn" href="briefs/${esc(b.date)}.html" target="_blank" rel="noopener">${esc(t('open_file'))} ↗</a></div></div>
       <article class="card brief" lang="ar">${b.md ? mdToHtml(b.md) : `<p>${esc(t('no_data'))}</p>`}</article></div>`;
   }
@@ -1519,6 +1519,7 @@
   // ------------------------------------------------------------------ events
   function bind() {
     document.addEventListener('click', (e) => {
+      if (e.target.closest('[data-print]')) { window.print(); return; }
       const dr = e.target.closest('[data-drange]');
       if (dr) { S.dRange = dr.dataset.drange; store('pulse.drange', S.dRange); $$('[data-drange]').forEach((b) => b.setAttribute('aria-pressed', String(b === dr))); drawDollar(); return; }
       if (e.target.closest('#pricebar')) { $('#pricebar').classList.toggle('paused'); return; }

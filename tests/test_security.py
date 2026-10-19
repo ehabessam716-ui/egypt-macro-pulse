@@ -28,3 +28,11 @@ def test_external_links_are_sanitised():
     js = (WEB / "app.js").read_text(encoding="utf-8")
     assert 'href="${esc(' not in js, "external hrefs must go through safeUrl()"
     assert "const safeUrl" in js
+
+
+def test_no_inline_event_handlers():
+    """Inline on*= handlers are blocked by the CSP (script-src 'self'), so buttons must use data-* + listeners."""
+    import re
+    js = (WEB / "app.js").read_text(encoding="utf-8")
+    html = (WEB / "index.html").read_text(encoding="utf-8")
+    assert not re.search(r"\son(click|load|error|change|input|submit)=", js + html)
