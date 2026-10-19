@@ -634,6 +634,7 @@
     const T = S.D.chain.tour;
     if (i < 0 || i >= T.length) { S.tour = null; closeDrawer(); return; }
     S.tour = { i };
+    lightFlow(T[i]);
     openNode(T[i]);
   }
 
@@ -940,7 +941,7 @@
       <p class="disclaimer">${esc(t('disclaimer'))}</p></div>`;
   }
   function viewChain() {
-    return `<div class="view simple"><div class="page-head"><div><h1>${esc(t('chain_title'))}</h1><p>${esc(t('chain_hint'))}</p></div></div>${chainMap()}</div>`;
+    return `<div class="view simple"><div class="page-head"><div><h1>${esc(t('chain_title'))}</h1></div></div>${chainFlow()}</div>`;
   }
   function viewLearn() {
     return `<div class="view simple"><div class="page-head"><div><h1>${esc(t('lessons_title'))}</h1><p>${esc(t('lessons_hint'))}</p></div></div>${lessonsRow(true)}</div>`;
@@ -1035,6 +1036,95 @@
         <p class="tiny muted">${esc(L2(I.method))} · ${(I.sources || []).map((x) => `<a href="${safeUrl(x.url)}" target="_blank" rel="noopener"><bdi>${esc(x.name)}</bdi></a>`).join(' · ')}</p>
       </section>`;
   }
+
+  // ================================================================== CHAIN AS ONE CONNECTED PICTURE (follow the dollar)
+  const SHORT = { wars: ['Wars & tension', 'الحروب والتوتر'], oil: ['Oil price', 'سعر البترول'], usd: ['US dollar', 'الدولار عالميا'],
+    remit: ['Egyptians abroad', 'تحويلات المصريين'], tourism: ['Tourism', 'السياحة'], suez: ['Suez Canal', 'قناة السويس'],
+    hot: ['Hot money', 'الأموال الساخنة'], imf: ['IMF & Gulf', 'صندوق النقد والخليج'], energy: ['Fuel imports', 'استيراد الوقود'],
+    food: ['Food imports', 'استيراد الأكل'], debt: ['Debt payments', 'أقساط الديون'], reserves: ['Reserves', 'الاحتياطي'],
+    pound: ['The pound', 'الجنيه'], prices: ['Prices', 'الأسعار'], rates: ['Interest rates', 'الفايدة'], life: ['Your daily life', 'حياتك اليومية'] };
+  const shortT = (n) => (SHORT[n.id] ? SHORT[n.id][AR() ? 1 : 0] : L2(n.title));
+  function fchip(n0, extra = '') {
+    const n = liveNode(n0); const [cls] = stOf(n);
+    const arrow = cls === 'p' ? '▲' : cls === 'r' ? '▼' : '•';
+    return `<button class="fc cn-${cls} ${extra}" data-node="${n.id}" data-fid="${n.id}"><span class="fc-ic" aria-hidden="true">${n.icon}</span>
+      <span class="fc-b"><span class="fc-t">${esc(shortT(n))}</span><span class="fc-v">${bidi(esc(L2(n.value) || '—'))}</span></span><i class="fc-s" aria-hidden="true">${arrow}</i></button>`;
+  }
+  function chainFlow() {
+    const C = S.D.chain;
+    if (!C) return '';
+    const by = (row) => C.nodes.filter((n) => n.row === row);
+    const ins = by(1), outs = by(2);
+    const node = (id) => C.nodes.find((n) => n.id === id);
+    const all = [...by(0), ...ins, ...outs, node('reserves'), node('rates')].filter(Boolean).map(liveNode);
+    const hurt = all.filter((n) => n.status === 1).length, help = all.filter((n) => n.status === -1).length;
+    const A = AR();
+    const tilt = Math.max(-12, Math.min(12, (hurt - help) * 3));
+    const verdictTxt = A ? `دلوقتي: ${hurt} حاجات بتضغط على الجنيه و${help} بتسنده.` : `Right now: ${hurt} things are pushing the pound down and ${help} are holding it up.`;
+    return `<section class="card flow" id="flow">
+      <div class="fl-top"><div class="fl-scale" style="--tilt:${tilt}deg" aria-hidden="true"><i></i><b></b></div>
+        <p>${bidi(esc(verdictTxt))}<br><span class="tiny muted">${esc(A ? 'دوس على أي حاجة تشوف هي مربوطة بإيه وليه مهمة.' : 'Tap anything to see what it is connected to and why it matters.')}</span></p>
+        <button class="btn primary" data-tour="start" type="button">▶ ${esc(t('start_tour'))}</button></div>
+      <div class="fl-band"><span class="fl-lbl">🌍 ${esc(A ? 'العالم' : 'The world')}</span><div class="fl-row">${by(0).map((n) => fchip(n)).join('')}</div>
+        <span class="fl-note">${esc(A ? '↓ بيأثر على الدولارات الداخلة والخارجة' : '↓ shakes the dollars coming in and going out')}</span></div>
+      <div class="fl-mid">
+        <div class="fl-col fl-in"><span class="fl-lbl in">⬇ ${esc(A ? 'دولارات داخلة' : 'Dollars coming in')}</span>${ins.map((n) => fchip(n, 'f-in')).join('')}</div>
+        <div class="fl-col fl-out"><span class="fl-lbl out">⬆ ${esc(A ? 'دولارات خارجة' : 'Dollars going out')}</span>${outs.map((n) => fchip(n, 'f-out')).join('')}</div>
+      </div>
+      <div class="fl-core">${node('reserves') ? fchip(node('reserves'), 'f-res') : ''}${fchip(node('pound'), 'f-pound')}</div>
+      <div class="fl-down">${node('prices') ? fchip(node('prices'), 'f-prices') : ''}${node('rates') ? fchip(node('rates'), 'f-rates') : ''}</div>
+      <div class="fl-end">${node('life') ? fchip(node('life'), 'f-life') : ''}</div>
+      <svg class="fl-svg" aria-hidden="true"></svg>
+      <div class="fl-legend"><span><i class="lg r"></i>${esc(A ? 'بيسند الجنيه' : 'helping the pound')}</span><span><i class="lg p"></i>${esc(A ? 'بيضغط عليه' : 'hurting it')}</span><span><i class="lg n"></i>${esc(A ? 'ثابت' : 'steady')}</span></div>
+    </section>`;
+  }
+  function drawFlow() {
+    const sec = $('#flow'); if (!sec) return;
+    const svg = $('.fl-svg', sec), box = sec.getBoundingClientRect();
+    svg.setAttribute('width', box.width); svg.setAttribute('height', box.height); svg.setAttribute('viewBox', `0 0 ${box.width} ${box.height}`);
+    const R = (id) => { const el = $(`[data-fid="${id}"]`, sec); if (!el) return null; const r = el.getBoundingClientRect();
+      return { x: r.left - box.left, y: r.top - box.top, w: r.width, h: r.height, cx: r.left - box.left + r.width / 2, cy: r.top - box.top + r.height / 2 }; };
+    const P = R('pound'); if (!P) return;
+    const col = (id) => { const n = nodeById(id); const c = n ? stOf(n)[0] : 'n'; return c === 'p' ? 'var(--pressure)' : c === 'r' ? 'var(--relief)' : 'var(--border-strong)'; };
+    const paths = [];
+    const add = (d, cls, color, id) => paths.push(`<path class="fl-path ${cls}" data-for="${id}" d="${d}" stroke="${color}"/>`);
+    const curve = (a, b) => `M${a[0]},${a[1]} C${a[0]},${(a[1] + b[1]) / 2} ${b[0]},${(a[1] + b[1]) / 2} ${b[0]},${b[1]}`;
+    // each item joins the side of the pound it sits on (works in English and Arabic layouts)
+    const tgt = (a, i, n) => P.cx + Math.sign(a.cx - P.cx || 1) * P.w * (0.08 + 0.32 * i / Math.max(1, n - 1));
+    const ins = $$('.f-in', sec).map((e) => e.dataset.fid), outs = $$('.f-out', sec).map((e) => e.dataset.fid);
+    // lines leave each box on the side facing the centre and run down the gap between the columns
+    const cols = $$('.fl-col', sec).map((c) => c.getBoundingClientRect());
+    const gapX = cols.length === 2 ? (Math.min(cols[0].right, cols[1].right) + Math.max(cols[0].left, cols[1].left)) / 2 - box.left : P.cx;
+    const lane = (a, i, n) => { const side = Math.sign(gapX - a.cx) || 1; const sx = side > 0 ? a.x + a.w : a.x;
+      const gx = gapX - side * (3 + 9 * i / Math.max(1, n - 1)); return { sx, sy: a.cy, gx, side }; };
+    const via = (L, tx) => `M${L.sx},${L.sy} C${L.gx},${L.sy} ${L.gx},${L.sy} ${L.gx},${L.sy + 14} L${L.gx},${P.y - 26} C${L.gx},${P.y - 8} ${tx},${P.y - 14} ${tx},${P.y}`;
+    ins.forEach((id, i) => { const a = R(id); if (a) add(via(lane(a, i, ins.length), tgt(a, i, ins.length)), 'in', col(id), id); });        // money flows INTO the pound
+    outs.forEach((id, i) => { const a = R(id); if (!a) return; const L = lane(a, i, outs.length), tx = tgt(a, i, outs.length);              // money flows OUT
+      add(`M${tx},${P.y} C${tx},${P.y - 14} ${L.gx},${P.y - 8} ${L.gx},${P.y - 26} L${L.gx},${L.sy + 14} C${L.gx},${L.sy} ${L.gx},${L.sy} ${L.sx},${L.sy}`, 'out', col(id), id); });
+    const res = R('reserves');
+    if (res) { const l = res.cx < P.cx; add(`M${l ? res.x + res.w : res.x},${res.cy} L${l ? P.x : P.x + P.w},${P.cy}`, 'in', col('reserves'), 'reserves'); }
+    const pr = R('prices'), lf = R('life'), rt = R('rates'), hot = R('hot');
+    if (pr) add(curve([P.cx, P.y + P.h], [pr.cx, pr.y]), 'down', col('prices'), 'prices');
+    if (pr && lf) add(curve([pr.cx, pr.y + pr.h], [lf.cx, lf.y]), 'down', col('life'), 'life');
+    if (rt && pr) { const l = pr.cx < rt.cx; add(`M${l ? pr.x + pr.w : pr.x},${pr.cy} L${l ? rt.x : rt.x + rt.w},${rt.cy}`, 'link', 'var(--border-strong)', 'rates'); }
+    if (rt && hot) {   // the loop: higher interest rates attract hot money
+      const right = hot.cx > box.width / 2;
+      const x = right ? Math.min(box.width - 4, Math.max(rt.x + rt.w, hot.x + hot.w) + 8) : Math.max(4, Math.min(rt.x, hot.x) - 8);
+      const ax = right ? rt.x + rt.w : rt.x, bx = right ? hot.x + hot.w : hot.x;
+      add(`M${ax},${rt.cy} C${x},${rt.cy} ${x},${hot.cy} ${bx},${hot.cy}`, 'loop', 'var(--sand)', 'rates');
+    }
+    svg.innerHTML = paths.join('');
+  }
+  // tap → light up everything connected to that box
+  function lightFlow(id) {
+    const sec = $('#flow'); if (!sec) return;
+    const C = S.D.chain, near = new Set([id]);
+    C.edges.forEach((e) => { if (e.from === id) near.add(e.to); if (e.to === id) near.add(e.from); });
+    sec.classList.add('lit');
+    $$('.fc', sec).forEach((el) => el.classList.toggle('on', near.has(el.dataset.fid)));
+    $$('.fl-path', sec).forEach((p) => p.classList.toggle('on', near.has(p.dataset.for)));
+  }
+  function unlightFlow() { const sec = $('#flow'); if (sec) { sec.classList.remove('lit'); $$('.on', sec).forEach((e) => e.classList.remove('on')); } }
 
   // ================================================================== WHY IS THE DOLLAR MOVING? (explainer, from live.js fx_story)
   const STRENGTH = { strong: ['p', 'Main reason', 'سبب رئيسي'], some: ['w', 'Adds pressure', 'بيزود الضغط'], none: ['n', 'Ruled out', 'مش السبب'] };
@@ -1291,6 +1381,7 @@
     } catch (e) { $('#dChart').innerHTML = `<div class="empty-state">${esc(e.message)}</div>`; }
   }
   function closeDrawer() {
+    unlightFlow();
     const dr = $('#drawer'); if (!dr.classList.contains('open')) return;
     S.tour = null;
     dr.classList.remove('open'); dr.setAttribute('aria-hidden', 'true');
@@ -1379,7 +1470,7 @@
     $('#main').innerHTML = html;
     renderNav();
     applyI18nStatic();
-    requestAnimationFrame(() => { drawAllCharts(); if (r === 'data') drawPpiHistory(); if (r === 'home') drawDollar(); });
+    requestAnimationFrame(() => { drawAllCharts(); if (r === 'data') drawPpiHistory(); if (r === 'home') drawDollar(); if (r === 'chain') drawFlow(); });
     if (keepScroll) window.scrollTo(0, y); else window.scrollTo(0, 0);
     const df = $('#dataFilter');
     if (df) df.addEventListener('input', () => { S.dataFilter = df.value; const pos = df.selectionStart; render(true); const n = $('#dataFilter'); n.focus(); n.setSelectionRange(pos, pos); });
@@ -1526,7 +1617,7 @@
       const mb = e.target.closest('[data-more]');
       if (mb) { const c = mb.closest('.live-card'); if (c) c.classList.add('expanded'); return; }
       const nEl = e.target.closest('[data-node]');
-      if (nEl) { e.preventDefault(); if (S.tour && !e.target.closest('.tourbar')) S.tour = null; openNode(nEl.dataset.node); return; }
+      if (nEl) { e.preventDefault(); if (S.tour && !e.target.closest('.tourbar')) S.tour = null; lightFlow(nEl.dataset.node); openNode(nEl.dataset.node); return; }
       const tr = e.target.closest('[data-tour]');
       if (tr) { e.preventDefault(); const a = tr.dataset.tour;
         if (a === 'start') tourGo(0); else if (a === 'next') tourGo(S.tour.i + 1); else if (a === 'back') tourGo(S.tour.i - 1); else { S.tour = null; closeDrawer(); }
@@ -1559,6 +1650,8 @@
       else if (e.key === 'Escape') { closePalette(); closeDrawer(); }
     });
     window.addEventListener('hashchange', onHash);
+    let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(drawFlow, 120); });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => drawFlow());
     let y0 = null;
     const panel = $('#drawer .drawer-panel');
     panel.addEventListener('touchstart', (e) => { y0 = panel.scrollTop <= 0 ? e.touches[0].clientY : null; }, { passive: true });
